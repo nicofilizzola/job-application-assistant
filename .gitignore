@@ -1,0 +1,25 @@
+# Personal data
+candidatures*
+
+# Secrets
+.env*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Tests
+playwright-report/
+test-results/
+
+# Vercel
+.vercel/
