@@ -1,0 +1,35 @@
+[project]
+name = "job-application-assistant-backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic",
+    "fastapi",
+    "psycopg[binary]",
+    "pydantic",
+    "pydantic-settings",
+    "sqlalchemy",
+]
+
+[dependency-groups]
+dev = [
+    "fastapi-cli[standard-no-fastapi-cloud-cli]",
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.vercel]
+entrypoint = "app.main:app"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
