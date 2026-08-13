@@ -1,0 +1,60 @@
+import datetime
+import uuid
+
+from sqlalchemy import REAL, Date, DateTime, ForeignKey, Index, Text, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Application(Base):
+    __tablename__ = "applications"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    title: Mapped[str] = mapped_column(Text)
+    company: Mapped[str] = mapped_column(Text)
+    sector: Mapped[str] = mapped_column(Text)
+    location: Mapped[str] = mapped_column(Text)
+    rating: Mapped[float | None] = mapped_column(REAL)
+    comment: Mapped[str | None] = mapped_column(Text)
+    link: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
+
+    updates: Mapped[list["StatusUpdate"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class StatusUpdate(Base):
+    __tablename__ = "status_updates"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE")
+    )
+    date: Mapped[datetime.date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    application: Mapped[Application] = relationship(back_populates="updates")
+
+
+# Serves the latest-update-per-application lookup: filter by application, take the first row.
+Index(
+    "ix_status_updates_application_id_date_created_at",
+    StatusUpdate.application_id,
+    StatusUpdate.date.desc(),
+    StatusUpdate.created_at.desc(),
+)
