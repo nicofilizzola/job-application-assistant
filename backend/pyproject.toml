@@ -16,6 +16,7 @@ dev = [
     "fastapi-cli[standard-no-fastapi-cloud-cli]",
     "httpx",
     "pytest",
+    "python-dotenv",
     "pytest-asyncio",
     "ruff",
 ]

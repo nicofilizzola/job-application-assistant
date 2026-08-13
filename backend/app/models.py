@@ -31,7 +31,17 @@ class Application(Base):
         back_populates="application",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        order_by="desc(StatusUpdate.date), desc(StatusUpdate.created_at)",
     )
+
+    # An application always has at least one update, so updates[0] is always the current one.
+    @property
+    def current_status(self) -> str:
+        return self.updates[0].status
+
+    @property
+    def last_update_date(self) -> datetime.date:
+        return self.updates[0].date
 
 
 class StatusUpdate(Base):
@@ -44,8 +54,10 @@ class StatusUpdate(Base):
     date: Mapped[datetime.date] = mapped_column(Date)
     status: Mapped[str] = mapped_column(Text)
     note: Mapped[str | None] = mapped_column(Text)
+    # clock_timestamp(), not now(): now() is the transaction timestamp, so two updates written
+    # together would tie here and the same-date tiebreak would have nothing to order by.
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True), server_default=func.clock_timestamp()
     )
 
     application: Mapped[Application] = relationship(back_populates="updates")
