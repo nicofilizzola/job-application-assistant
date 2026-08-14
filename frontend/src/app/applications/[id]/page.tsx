@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AddUpdateForm } from "@/components/add-update-form";
 import { AppHeader } from "@/components/app-header";
 import { DeleteApplication } from "@/components/delete-application";
+import { EditUpdateDialog } from "@/components/edit-update-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,13 @@ export default async function ApplicationPage({ params }: PageProps<"/applicatio
                     {update.note}
                   </p>
                 )}
+                <div className="shrink-0 self-start sm:ml-auto sm:self-center">
+                  <EditUpdateDialog
+                    applicationId={application.id}
+                    update={update}
+                    deletable={application.updates.length > 1}
+                  />
+                </div>
               </li>
             ))}
           </ol>
