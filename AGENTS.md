@@ -32,7 +32,8 @@ update. There is exactly one place to write a status change, so nothing can drif
 Consequences the implementation must honour:
 
 - **An application always has at least one status update.** Creating an application creates its
-  first update in the same transaction. There is no such thing as a statusless application.
+  first update in the same transaction. There is no such thing as a statusless application, so
+  deleting the last remaining update is refused with a `409`.
 - `Derniere maj` from the spreadsheet does not exist as a field. It is `max(update.date)`.
 - `Candidate le` does not exist as a field. It is the date of the earliest update.
 - Interview rounds are not distinct statuses. Two `Interview` updates on different dates *is* a
@@ -64,7 +65,8 @@ information the single spreadsheet value was compressing.
    first. A single `Hide closed` toggle, on by default: a third of the existing 26 rows are already
    `Rejected` or `Withdrawn`, and they should not be the first thing seen.
 3. **Application detail** - all fields, the job posting link, and the full status timeline in reverse
-   chronological order. Add a status update from here.
+   chronological order. Add a status update from here; correct or delete an existing one from a
+   dialog on the same screen.
 4. **Create / edit application** - one form. Creating requires an initial status and its date.
 
 Delete is available from the detail screen and cascades to that application's updates.
@@ -166,18 +168,21 @@ decisions.
 Every route requires the `X-API-Key` header. `include_closed` drives the `Hide closed` toggle, so
 the filter runs in SQL rather than dropping rows client-side.
 
-| Method   | Path                              | Purpose                                          |
-| -------- | --------------------------------- | ------------------------------------------------ |
-| `GET`    | `/health`                         | Liveness, for the local startup check            |
-| `GET`    | `/applications?include_closed=`   | List with derived current status and last update |
-| `POST`   | `/applications`                   | Create application + first update, one txn       |
-| `GET`    | `/applications/{id}`              | Detail with full timeline                        |
-| `PATCH`  | `/applications/{id}`              | Edit fields                                      |
-| `DELETE` | `/applications/{id}`              | Delete, cascades to updates                      |
-| `POST`   | `/applications/{id}/status-updates` | Append a status update                         |
+| Method   | Path                                           | Purpose                                          |
+| -------- | ---------------------------------------------- | ------------------------------------------------ |
+| `GET`    | `/health`                                      | Liveness, for the local startup check            |
+| `GET`    | `/applications?include_closed=`                | List with derived current status and last update |
+| `POST`   | `/applications`                                | Create application + first update, one txn       |
+| `GET`    | `/applications/{id}`                           | Detail with full timeline                        |
+| `PATCH`  | `/applications/{id}`                           | Edit fields                                      |
+| `DELETE` | `/applications/{id}`                           | Delete, cascades to updates                      |
+| `POST`   | `/applications/{id}/status-updates`            | Append a status update                           |
+| `PATCH`  | `/applications/{id}/status-updates/{update_id}` | Edit one timeline entry                         |
+| `DELETE` | `/applications/{id}/status-updates/{update_id}` | Delete one entry, never the last                |
 
-Status updates cannot be edited or deleted individually. The timeline is append-only in the MVP; a
-mistake is fixed by deleting the application.
+A status update is addressed through its application, so an update id under the wrong application is
+a `404` rather than a cross-record write. Deleting an application's only update is a `409`: the
+current status is derived from the timeline, so an empty one has nothing to derive from.
 
 ### Types across the boundary
 
@@ -314,13 +319,17 @@ Nearly all the tricky logic now lives in Python, so nearly all the unit tests do
 - The import script's timeline extraction from `Commentaire`
 - The `include_closed` filter returning the right set
 - API contract tests through `httpx` with `ASGITransport`, no network
+- The last-remaining-update guard, and that an update cannot be edited or deleted through another
+  application's id
+- That editing a date does not rewrite `created_at`, so an entry edited into a same-date tie still
+  resolves by original write order
 
 **Vitest** - only where real logic exists on the frontend: status-to-colour mapping, date
 formatting. Render-only components do not need tests written to reach a coverage number.
 
 **Playwright** - login, create an application with its first status update, add a second update and
-see the current status change, `Hide closed` toggle behaviour, edit, delete. Runs against both
-services, which means the suite starts two processes.
+see the current status change, correct and delete a timeline entry, `Hide closed` toggle behaviour,
+edit, delete. Runs against both services, which means the suite starts two processes.
 
 ## Color Scheme
 
@@ -364,8 +373,11 @@ rediscovered:
   moment either of those changes.
 - **Generated types can go stale.** `openapi-typescript` output is only as current as the last run.
   Wiring it into the build is what keeps a Pydantic change from silently passing TypeScript.
-- **The timeline is append-only.** No edit or delete on an individual status update, because it
-  would need its own screen and a mis-typed date is rare. Revisit if it turns out to be annoying.
+- **A status update has no route of its own.** Editing and deleting one happens in a dialog on the
+  detail screen rather than at a dedicated URL, because the form is three fields. The consequence is
+  that an edit is not linkable and not resumable, which for one user correcting a typo is fine.
+- **An edit never rewrites `created_at`.** An entry edited onto a date it now shares with another
+  still ties by original write order. Correct, but not obvious from the UI, which shows no times.
 
 ## Strategy
 
