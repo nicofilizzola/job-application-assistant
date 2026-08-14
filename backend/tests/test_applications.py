@@ -30,7 +30,12 @@ async def create(client, **overrides) -> str:
     return response.json()["id"]
 
 
-def test_openapi_exposes_exactly_the_seven_routes():
+async def first_update_id(client, application_id: str) -> str:
+    detail = (await client.get(f"/applications/{application_id}")).json()
+    return detail["updates"][0]["id"]
+
+
+def test_openapi_exposes_exactly_the_expected_routes():
     exposed = {
         (path, method.upper())
         for path, operations in app.openapi()["paths"].items()
@@ -44,6 +49,7 @@ def test_openapi_exposes_exactly_the_seven_routes():
         ("/applications/{application_id}", "PATCH"),
         ("/applications/{application_id}", "DELETE"),
         ("/applications/{application_id}/status-updates", "POST"),
+        ("/applications/{application_id}/status-updates/{update_id}", "PATCH"),
     }
 
 
@@ -56,10 +62,11 @@ def test_openapi_exposes_exactly_the_seven_routes():
         ("PATCH", "/applications/{id}"),
         ("DELETE", "/applications/{id}"),
         ("POST", "/applications/{id}/status-updates"),
+        ("PATCH", "/applications/{id}/status-updates/{update_id}"),
     ],
 )
 async def test_every_application_route_requires_the_api_key(anonymous_client, method, path):
-    url = path.format(id=uuid.uuid4())
+    url = path.format(id=uuid.uuid4(), update_id=uuid.uuid4())
     body = payload() if method in {"POST", "PATCH"} else None
     response = await anonymous_client.request(method, url, json=body)
     assert response.status_code == 401
@@ -254,4 +261,144 @@ async def test_unknown_status_is_422(client):
     response = await client.post(
         "/applications", json=payload(first_update={"date": "2026-08-01", "status": "Ghosted"})
     )
+    assert response.status_code == 422
+
+
+async def test_patch_status_update_changes_only_the_fields_given(client):
+    application_id = await create(client)
+    update_id = await first_update_id(client, application_id)
+
+    response = await client.patch(
+        f"/applications/{application_id}/status-updates/{update_id}",
+        json={"note": "corrected"},
+    )
+
+    assert response.status_code == 200, response.text
+    entry = response.json()["updates"][0]
+    assert entry["note"] == "corrected"
+    assert entry["date"] == "2026-08-01"
+    assert entry["status"] == "Applied"
+
+
+async def test_patch_status_update_can_clear_the_note(client):
+    application_id = await create(client)
+    update_id = await first_update_id(client, application_id)
+    url = f"/applications/{application_id}/status-updates/{update_id}"
+    await client.patch(url, json={"note": "typo"})
+
+    response = await client.patch(url, json={"note": None})
+
+    assert response.json()["updates"][0]["note"] is None
+
+
+async def test_patch_moving_a_date_back_moves_the_current_status(client):
+    application_id = await create(client)  # Applied on 2026-08-01
+    added = await client.post(
+        f"/applications/{application_id}/status-updates",
+        json={"date": "2026-08-09", "status": "Interview"},
+    )
+    interview_id = added.json()["updates"][0]["id"]
+
+    body = (
+        await client.patch(
+            f"/applications/{application_id}/status-updates/{interview_id}",
+            json={"date": "2026-07-25"},
+        )
+    ).json()
+
+    # The response carries the re-derived timeline, not the order it was written in.
+    assert [u["date"] for u in body["updates"]] == ["2026-08-01", "2026-07-25"]
+    assert body["current_status"] == "Applied"
+    assert body["last_update_date"] == "2026-08-01"
+
+    listed = (await client.get("/applications")).json()
+    assert listed[0]["current_status"] == "Applied"
+    assert listed[0]["last_update_date"] == "2026-08-01"
+
+
+async def test_patch_a_status_can_close_an_application(client):
+    application_id = await create(client)
+    update_id = await first_update_id(client, application_id)
+
+    await client.patch(
+        f"/applications/{application_id}/status-updates/{update_id}",
+        json={"status": "Withdrawn"},
+    )
+
+    assert (await client.get("/applications")).json() == []
+    everything = (await client.get("/applications", params={"include_closed": True})).json()
+    assert [row["current_status"] for row in everything] == ["Withdrawn"]
+
+
+async def test_editing_a_date_into_a_tie_still_resolves_by_created_at(client):
+    """An edit rewrites date, never created_at, so the original write order breaks the tie."""
+    application_id = await create(client)  # Applied on 2026-08-01, written first
+    added = await client.post(
+        f"/applications/{application_id}/status-updates",
+        json={"date": "2026-08-09", "status": "Interview"},
+    )
+    interview_id = added.json()["updates"][0]["id"]
+
+    body = (
+        await client.patch(
+            f"/applications/{application_id}/status-updates/{interview_id}",
+            json={"date": "2026-08-01"},
+        )
+    ).json()
+
+    assert body["current_status"] == "Interview"
+    assert [u["status"] for u in body["updates"]] == ["Interview", "Applied"]
+
+
+async def test_patch_through_another_applications_id_is_404(client):
+    mine = await create(client)
+    theirs = await create(client, title="Someone else")
+    theirs_update = await first_update_id(client, theirs)
+
+    response = await client.patch(
+        f"/applications/{mine}/status-updates/{theirs_update}", json={"status": "Offer"}
+    )
+
+    assert response.status_code == 404
+    assert (await client.get(f"/applications/{theirs}")).json()["current_status"] == "Applied"
+
+
+async def test_patch_an_unknown_status_update_is_404(client):
+    application_id = await create(client)
+
+    response = await client.patch(
+        f"/applications/{application_id}/status-updates/{uuid.uuid4()}", json={"status": "Offer"}
+    )
+
+    assert response.status_code == 404
+
+
+async def test_patching_a_status_update_on_an_unknown_application_is_404(client):
+    response = await client.patch(
+        f"/applications/{uuid.uuid4()}/status-updates/{uuid.uuid4()}", json={"status": "Offer"}
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize("field", ["date", "status"])
+async def test_patch_cannot_null_a_status_updates_date_or_status(client, field):
+    application_id = await create(client)
+    update_id = await first_update_id(client, application_id)
+
+    response = await client.patch(
+        f"/applications/{application_id}/status-updates/{update_id}", json={field: None}
+    )
+
+    assert response.status_code == 422
+
+
+async def test_patch_an_unknown_status_value_is_422(client):
+    application_id = await create(client)
+    update_id = await first_update_id(client, application_id)
+
+    response = await client.patch(
+        f"/applications/{application_id}/status-updates/{update_id}", json={"status": "Ghosted"}
+    )
+
     assert response.status_code == 422
