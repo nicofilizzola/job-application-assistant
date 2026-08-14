@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select, true
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from app.db import get_session
@@ -134,3 +134,22 @@ def update_status_update(
     # edited date reorders the timeline in the response rather than returning the loaded order.
     session.refresh(application)
     return application
+
+
+@router.delete(
+    "/{application_id}/status-updates/{update_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_status_update(application_id: uuid.UUID, update_id: uuid.UUID, session: SessionDep):
+    update = _load_update(session, application_id, update_id)
+    remaining = session.scalar(
+        select(func.count())
+        .select_from(StatusUpdate)
+        .where(StatusUpdate.application_id == application_id)
+    )
+    # The current status is derived from the updates, so an application with none has no status.
+    if remaining == 1:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "An application must keep at least one status update"
+        )
+    session.delete(update)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

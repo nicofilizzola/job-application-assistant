@@ -50,6 +50,7 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("/applications/{application_id}", "DELETE"),
         ("/applications/{application_id}/status-updates", "POST"),
         ("/applications/{application_id}/status-updates/{update_id}", "PATCH"),
+        ("/applications/{application_id}/status-updates/{update_id}", "DELETE"),
     }
 
 
@@ -63,6 +64,7 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("DELETE", "/applications/{id}"),
         ("POST", "/applications/{id}/status-updates"),
         ("PATCH", "/applications/{id}/status-updates/{update_id}"),
+        ("DELETE", "/applications/{id}/status-updates/{update_id}"),
     ],
 )
 async def test_every_application_route_requires_the_api_key(anonymous_client, method, path):
@@ -402,3 +404,49 @@ async def test_patch_an_unknown_status_value_is_422(client):
     )
 
     assert response.status_code == 422
+
+
+async def test_delete_a_status_update_reverts_the_current_status(client, session):
+    application_id = await create(client)
+    added = await client.post(
+        f"/applications/{application_id}/status-updates",
+        json={"date": "2026-08-09", "status": "Rejected"},
+    )
+    rejected_id = added.json()["updates"][0]["id"]
+
+    response = await client.delete(f"/applications/{application_id}/status-updates/{rejected_id}")
+
+    assert response.status_code == 204
+    detail = (await client.get(f"/applications/{application_id}")).json()
+    assert [u["date"] for u in detail["updates"]] == ["2026-08-01"]
+    assert detail["current_status"] == "Applied"
+    assert session.execute(select(func.count()).select_from(StatusUpdate)).scalar() == 1
+
+
+async def test_deleting_the_only_status_update_is_409(client):
+    application_id = await create(client)
+    update_id = await first_update_id(client, application_id)
+
+    response = await client.delete(f"/applications/{application_id}/status-updates/{update_id}")
+
+    assert response.status_code == 409
+    assert len((await client.get(f"/applications/{application_id}")).json()["updates"]) == 1
+
+
+async def test_delete_a_status_update_through_another_applications_id_is_404(client, session):
+    mine = await create(client)
+    theirs = await create(client, title="Someone else")
+    theirs_update = await first_update_id(client, theirs)
+
+    response = await client.delete(f"/applications/{mine}/status-updates/{theirs_update}")
+
+    assert response.status_code == 404
+    assert session.execute(select(func.count()).select_from(StatusUpdate)).scalar() == 2
+
+
+async def test_deleting_an_unknown_status_update_is_404(client):
+    application_id = await create(client)
+
+    response = await client.delete(f"/applications/{application_id}/status-updates/{uuid.uuid4()}")
+
+    assert response.status_code == 404
