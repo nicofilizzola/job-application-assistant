@@ -95,7 +95,7 @@ export default async function ApplicationPage({ params }: PageProps<"/applicatio
 
         <section className="space-y-3">
           <h2 className="text-base font-medium">Timeline</h2>
-          <ol className="divide-y rounded-lg border">
+          <ol aria-label="Timeline" className="divide-y rounded-lg border">
             {application.updates.map((update) => (
               <li key={update.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:gap-4">
                 <div className="flex shrink-0 items-center gap-3 sm:w-56">

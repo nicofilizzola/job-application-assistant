@@ -31,7 +31,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/">)
             Nothing here yet.
           </p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul aria-label="Applications" className="divide-y rounded-lg border">
             {applications.map((application) => (
               <li key={application.id}>
                 <Link
