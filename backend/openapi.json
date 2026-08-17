@@ -850,6 +850,34 @@
               }
             ],
             "title": "Match Summary"
+          },
+          "match_strengths": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Strengths"
+          },
+          "match_weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Weaknesses"
           }
         },
         "type": "object",
@@ -951,6 +979,34 @@
             ],
             "title": "Match Summary"
           },
+          "match_strengths": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Strengths"
+          },
+          "match_weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Weaknesses"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -990,6 +1046,8 @@
           "job_ad",
           "match_rating",
           "match_summary",
+          "match_strengths",
+          "match_weaknesses",
           "created_at",
           "updated_at",
           "current_status",
@@ -1217,6 +1275,34 @@
               }
             ],
             "title": "Match Summary"
+          },
+          "match_strengths": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Strengths"
+          },
+          "match_weaknesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Weaknesses"
           }
         },
         "type": "object",
@@ -1226,10 +1312,12 @@
           "sector",
           "location",
           "match_rating",
-          "match_summary"
+          "match_summary",
+          "match_strengths",
+          "match_weaknesses"
         ],
         "title": "JobAnalysis",
-        "description": "What one model call returns. Also the response body of POST /job-ads/analyse.\n\nThe match fields are null when there is no profile to score against. No defaults: OpenAI's\nstrict structured outputs require every property to be required, and nullability is how\n\"absent\" is expressed."
+        "description": "What one model call returns. Also the response body of POST /job-ads/analyse.\n\nThe match fields are null when there is no profile to score against. No defaults: OpenAI's\nstrict structured outputs require every property to be required, and nullability is how\n\"absent\" is expressed. The 210-character summary and the four-entry lists are prompt rules,\nnot constraints here - a length limit in this model would turn a chatty model into a 500."
       },
       "ProfileRead": {
         "properties": {

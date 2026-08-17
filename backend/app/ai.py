@@ -25,8 +25,8 @@ FIELDS = """Pull these fields out of the advert:
 
 Answer in English, translating the advert's wording where it is in another language."""
 
-NO_PROFILE = """There is no candidate profile available, so leave match_rating and match_summary
-null. Do not guess a score."""
+NO_PROFILE = """There is no candidate profile available, so leave match_rating, match_summary,
+match_strengths and match_weaknesses null. Do not guess a score."""
 
 SCORING = """Score the match on skills and background alone: technical stack, domain experience,
 seniority, and what the candidate has actually shipped. Ignore location, remote policy, salary,
@@ -41,8 +41,22 @@ Use this scale, in half points:
 - 4 - meets most requirements, gaps are minor
 - 5 - meets or exceeds essentially every requirement
 
-Put the score in match_rating and explain it in match_summary in exactly three sentences: what
-fits, what does not, and what tipped it to that value rather than the half point above or below.
+Put the score in match_rating, then justify it across three fields:
+
+- match_summary: why the score is that value, in 210 characters or fewer. One or two sentences.
+- match_strengths: what the candidate brings that this advert asks for. One to four entries.
+- match_weaknesses: what this advert asks for that the candidate lacks. Skills and background
+  only - never location, language, visa, salary or remote policy, for the same reason those do
+  not move the score. One to four entries.
+
+Give each list only as many entries as there are things worth naming: one sharp point beats four
+padded ones. Never make the same point in both lists.
+
+Write all three fields in stripped-down language. List entries are fragments, not sentences:
+"Six years shipping FastAPI", not "The candidate has six years of experience shipping FastAPI
+services". No leading dashes, no full stop ending an entry, no hedging ("appears to", "seems"),
+no filler ("strong candidate", "good fit", "overall"), and never write "the candidate" - who is
+being described is already understood.
 
 Here is the candidate:
 
@@ -82,6 +96,10 @@ STUB = JobAnalysis(
     location="Nowhere",
     match_rating=3.5,
     match_summary="A fixed answer, so the end-to-end suite never calls OpenAI.",
+    # Two on one side and one on the other, so the end-to-end suite proves the columns fill
+    # independently. No entry is a substring of another: Playwright's getByText would match both.
+    match_strengths=["Stubbed strength", "Another stubbed point"],
+    match_weaknesses=["Stubbed weakness"],
 )
 
 

@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import type { FormState } from "@/app/applications/actions";
 import { Field, selectClasses } from "@/components/field";
 import { JobAdAnalyser } from "@/components/job-ad-analyser";
+import { MatchPanel } from "@/components/match-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,15 @@ export function ApplicationForm({
   return (
     <div className="space-y-6">
       {creating && <JobAdAnalyser onAnalysed={applyAnalysis} />}
+
+      {analysis?.match_rating != null && (
+        <MatchPanel
+          rating={analysis.match_rating}
+          summary={analysis.match_summary}
+          strengths={analysis.match_strengths}
+          weaknesses={analysis.match_weaknesses}
+        />
+      )}
 
       <form key={prefillKey} action={submit} className="space-y-6">
         <div className="grid gap-6 sm:grid-cols-2">
@@ -133,6 +143,13 @@ export function ApplicationForm({
             <input type="hidden" name="job_ad" value={prefill.adText} />
             <input type="hidden" name="match_rating" value={analysis?.match_rating ?? ""} />
             <input type="hidden" name="match_summary" value={analysis?.match_summary ?? ""} />
+            {/* One input per entry, so formData.getAll rebuilds the list on the server. */}
+            {(analysis?.match_strengths ?? []).map((item, index) => (
+              <input key={index} type="hidden" name="match_strengths" value={item} />
+            ))}
+            {(analysis?.match_weaknesses ?? []).map((item, index) => (
+              <input key={index} type="hidden" name="match_weaknesses" value={item} />
+            ))}
           </>
         )}
 

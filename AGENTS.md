@@ -23,7 +23,8 @@ An application record holds:
 - Comment (free text, multi-line, optional)
 - Job posting link (optional)
 - The pasted job advert, when the record was created from one (optional)
-- An AI match rating (1-5, half points) and its three-sentence justification (optional)
+- An AI match rating (1-5, half points), a summary of at most 210 characters, and two lists of one
+  to four short entries each - what matches well, and weaknesses (optional)
 - A list of dated status updates
 
 ### Status updates are the source of truth
@@ -67,13 +68,15 @@ information the single spreadsheet value was compressing.
    Sorted by last update, most recent first. A single `Hide closed` toggle, on by default: a third of
    the existing 26 rows are already `Rejected` or `Withdrawn`, and they should not be the first thing
    seen.
-3. **Application detail** - all fields, the job posting link, the AI match and its justification, the
-   pasted advert in a collapsed block, and the full status timeline in reverse chronological order.
+3. **Application detail** - all fields, the job posting link, the AI match - its rating, its short
+   summary, and its strengths and weaknesses columns - the pasted advert in a collapsed block, and
+   the full status timeline in reverse chronological order.
    Add a status update from here; correct or delete an existing one from a dialog on the same screen.
    Re-score the match from here too, when an advert was stored.
 4. **Create / edit application** - one form. Creating requires an initial status and its date. An
    `AI mode` toggle on the create form takes a pasted job advert, fills the fields in from it, and
-   scores the match. Every field stays editable and nothing is written until the form is submitted.
+   scores the match, showing the same match block the detail screen does so the score can be read
+   before saving. Every field stays editable and nothing is written until the form is submitted.
 5. **Profile** - one textarea holding the candidate's background, reached from the header. AI mode
    scores adverts against it. Empty until written, which is a supported state, not an error.
 
@@ -219,7 +222,9 @@ applications
   link         text        null
   job_ad        text       null        -- the advert as pasted, when AI mode created the record
   match_rating  real       null        -- 1.0-5.0, 0.5 steps, written by AI only
-  match_summary text       null        -- three sentences justifying match_rating
+  match_summary text       null        -- at most 210 characters, justifying match_rating
+  match_strengths  text[]  null        -- up to four short entries: what fits
+  match_weaknesses text[]  null        -- up to four short entries: what does not
   created_at   timestamptz not null default now()
   updated_at   timestamptz not null
 
@@ -356,7 +361,8 @@ Nearly all the tricky logic now lives in Python, so nearly all the unit tests do
 - That editing a date does not rewrite `created_at`, so an entry edited into a same-date tie still
   resolves by original write order
 - The half-point snap on whatever the model returns, including out-of-range values
-- That `ApplicationPatch` cannot write `match_rating`, `match_summary` or `job_ad`
+- That `ApplicationPatch` cannot write `job_ad` or any of the four AI match fields
+- That re-scoring replaces both match lists wholesale rather than adding to them
 - That re-scoring with an empty profile is refused rather than erasing the existing score
 - What the analyser is handed: the pasted advert and the stored profile, with the OpenAI call
   replaced by a recorder through a FastAPI dependency override
@@ -418,9 +424,14 @@ rediscovered:
 - **A status update has no route of its own.** Editing and deleting one happens in a dialog on the
   detail screen rather than at a dedicated URL, because the form is three fields. The consequence is
   that an edit is not linkable and not resumable, which for one user correcting a typo is fine.
-- **The match is AI-owned and read-only.** `ApplicationCreate` accepts the three AI fields and
+- **The match is AI-owned and read-only.** `ApplicationCreate` accepts the five AI fields and
   `ApplicationPatch` has no field for any of them, so a score cannot be hand-tuned. The cost is that
   a wrong score can only be replaced by re-scoring, never corrected or cleared.
+- **The 210-character summary and the four-entry columns are prompt rules, not validated limits.**
+  Nothing in Python trims or counts what the model returns, so a model that ignores the instruction
+  produces a long summary or a fifth entry and the UI renders it. Chosen over silent truncation
+  because a clipped sentence reads as a bug; if it turns out to happen, clamping in `app/ai.py`
+  alongside `half_step` is the fix.
 - **The advert is stored as pasted.** No tidying pass, so the detail screen shows a raw copy-paste,
   including whatever navigation text came with it. It is collapsed by default for that reason.
 - **One model call does extraction and scoring together.** Two calls would separate a mechanical job

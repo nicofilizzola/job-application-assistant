@@ -178,6 +178,10 @@ export interface components {
             match_rating?: number | null;
             /** Match Summary */
             match_summary?: string | null;
+            /** Match Strengths */
+            match_strengths?: string[] | null;
+            /** Match Weaknesses */
+            match_weaknesses?: string[] | null;
         };
         /** ApplicationDetail */
         ApplicationDetail: {
@@ -206,6 +210,10 @@ export interface components {
             match_rating: number | null;
             /** Match Summary */
             match_summary: string | null;
+            /** Match Strengths */
+            match_strengths: string[] | null;
+            /** Match Weaknesses */
+            match_weaknesses: string[] | null;
             /**
              * Created At
              * Format: date-time
@@ -284,7 +292,8 @@ export interface components {
          *
          *     The match fields are null when there is no profile to score against. No defaults: OpenAI's
          *     strict structured outputs require every property to be required, and nullability is how
-         *     "absent" is expressed.
+         *     "absent" is expressed. The 210-character summary and the four-entry lists are prompt rules,
+         *     not constraints here - a length limit in this model would turn a chatty model into a 500.
          */
         JobAnalysis: {
             /** Title */
@@ -299,6 +308,10 @@ export interface components {
             match_rating: number | null;
             /** Match Summary */
             match_summary: string | null;
+            /** Match Strengths */
+            match_strengths: string[] | null;
+            /** Match Weaknesses */
+            match_weaknesses: string[] | null;
         };
         /** ProfileRead */
         ProfileRead: {

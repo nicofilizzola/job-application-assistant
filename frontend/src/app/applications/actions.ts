@@ -47,6 +47,16 @@ function optional(formData: FormData, name: string): string | null {
   return value === "" ? null : value;
 }
 
+/** Repeated hidden inputs. An absent list and an empty one both mean "nothing to show", and the
+ *  UI renders them identically, so both arrive as null. */
+function optionalList(formData: FormData, name: string): string[] | null {
+  const items = formData
+    .getAll(name)
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  return items.length === 0 ? null : items;
+}
+
 function readApplication(formData: FormData) {
   const rating = optional(formData, "rating");
   return {
@@ -67,6 +77,8 @@ function readAiFields(formData: FormData) {
     job_ad: optional(formData, "job_ad"),
     match_rating: matchRating === null ? null : Number(matchRating),
     match_summary: optional(formData, "match_summary"),
+    match_strengths: optionalList(formData, "match_strengths"),
+    match_weaknesses: optionalList(formData, "match_weaknesses"),
   };
 }
 

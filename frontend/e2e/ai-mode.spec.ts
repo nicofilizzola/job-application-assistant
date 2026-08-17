@@ -40,6 +40,7 @@ test("AI mode fills the form from a pasted advert", async ({ page }) => {
 
   // The form is empty and the paste box is not offered until AI mode is on.
   await expect(page.getByLabel("Job advert")).toBeHidden();
+  await expect(page.getByRole("region", { name: "AI match" })).toBeHidden();
   await page.getByLabel("AI mode").click();
   await page.getByLabel("Job advert").fill(ADVERT);
   await page.getByRole("button", { name: "Fill the form" }).click();
@@ -50,11 +51,26 @@ test("AI mode fills the form from a pasted advert", async ({ page }) => {
   await expect(page.getByLabel("Location")).toHaveValue("Nowhere");
   await expect(page.getByLabel("Date")).not.toHaveValue("");
 
+  // Reviewable before anything is written: the same block the detail screen shows.
+  const preview = page.getByRole("region", { name: "AI match" });
+  await expect(preview.getByText("3.5 / 5")).toBeVisible();
+  await expect(preview.getByRole("heading", { name: "What matches well" })).toBeVisible();
+  await expect(preview.getByText("Stubbed strength")).toBeVisible();
+  await expect(preview.getByText("Another stubbed point")).toBeVisible();
+  await expect(preview.getByRole("heading", { name: "Weaknesses" })).toBeVisible();
+  await expect(preview.getByText("Stubbed weakness")).toBeVisible();
+
   await page.getByRole("button", { name: "Create application" }).click();
 
   await expect(page.getByRole("heading", { name: "Stubbed Engineer" })).toBeVisible();
-  await expect(page.getByText("3.5 / 5")).toBeVisible();
-  await expect(page.getByText("A fixed answer")).toBeVisible();
+  const match = page.getByRole("region", { name: "AI match" });
+  await expect(match.getByText("3.5 / 5")).toBeVisible();
+  await expect(match.getByText("A fixed answer")).toBeVisible();
+  await expect(match.getByRole("heading", { name: "What matches well" })).toBeVisible();
+  await expect(match.getByText("Stubbed strength")).toBeVisible();
+  await expect(match.getByText("Another stubbed point")).toBeVisible();
+  await expect(match.getByRole("heading", { name: "Weaknesses" })).toBeVisible();
+  await expect(match.getByText("Stubbed weakness")).toBeVisible();
   await expect(page.getByText("Job advert")).toBeVisible();
 });
 

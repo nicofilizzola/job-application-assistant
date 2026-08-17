@@ -466,12 +466,16 @@ async def test_create_stores_the_ai_fields(client):
         job_ad="Full Stack Software Engineer. Remote, Sweden.",
         match_rating=3.5,
         match_summary="Strong stack overlap, no fintech background.",
+        match_strengths=["Python and FastAPI", "Six years full stack"],
+        match_weaknesses=["No fintech domain"],
     )
 
     detail = (await client.get(f"/applications/{application_id}")).json()
     assert detail["job_ad"] == "Full Stack Software Engineer. Remote, Sweden."
     assert detail["match_rating"] == 3.5
     assert detail["match_summary"] == "Strong stack overlap, no fintech background."
+    assert detail["match_strengths"] == ["Python and FastAPI", "Six years full stack"]
+    assert detail["match_weaknesses"] == ["No fintech domain"]
 
 
 async def test_an_application_created_by_hand_has_no_match(client):
@@ -481,20 +485,45 @@ async def test_an_application_created_by_hand_has_no_match(client):
     assert detail["job_ad"] is None
     assert detail["match_rating"] is None
     assert detail["match_summary"] is None
+    assert detail["match_strengths"] is None
+    assert detail["match_weaknesses"] is None
+
+
+async def test_create_keeps_an_empty_match_list_empty(client):
+    """A 5/5 match can genuinely have nothing worth naming as a weakness."""
+    application_id = await create(client, match_rating=5.0, match_weaknesses=[])
+
+    detail = (await client.get(f"/applications/{application_id}")).json()
+    assert detail["match_weaknesses"] == []
 
 
 async def test_patch_cannot_touch_the_ai_fields(client):
-    application_id = await create(client, match_rating=3.5, match_summary="Original.")
+    application_id = await create(
+        client,
+        match_rating=3.5,
+        match_summary="Original.",
+        match_strengths=["Original strength"],
+        match_weaknesses=["Original weakness"],
+    )
 
     response = await client.patch(
         f"/applications/{application_id}",
-        json={"title": "Renamed", "match_rating": 5, "match_summary": "Talked up."},
+        json={
+            "title": "Renamed",
+            "match_rating": 5,
+            "match_summary": "Talked up.",
+            "match_strengths": ["Invented strength"],
+            "match_weaknesses": [],
+        },
     )
 
     assert response.status_code == 200
-    assert response.json()["title"] == "Renamed"
-    assert response.json()["match_rating"] == 3.5
-    assert response.json()["match_summary"] == "Original."
+    body = response.json()
+    assert body["title"] == "Renamed"
+    assert body["match_rating"] == 3.5
+    assert body["match_summary"] == "Original."
+    assert body["match_strengths"] == ["Original strength"]
+    assert body["match_weaknesses"] == ["Original weakness"]
 
 
 async def test_the_list_carries_the_match_rating(client):
