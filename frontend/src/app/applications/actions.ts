@@ -6,11 +6,15 @@ import { z } from "zod";
 
 import {
   addStatusUpdate,
+  analyseJobAd,
+  ApiError,
   createApplication,
   deleteApplication,
   deleteStatusUpdate,
   patchApplication,
   patchStatusUpdate,
+  scoreMatch,
+  type JobAnalysis,
 } from "@/lib/api";
 import { STATUSES, type Status } from "@/lib/status";
 
@@ -56,6 +60,16 @@ function readApplication(formData: FormData) {
   };
 }
 
+/** Hidden fields, written by AI mode only. Absent on a hand-filled form. */
+function readAiFields(formData: FormData) {
+  const matchRating = optional(formData, "match_rating");
+  return {
+    job_ad: optional(formData, "job_ad"),
+    match_rating: matchRating === null ? null : Number(matchRating),
+    match_summary: optional(formData, "match_summary"),
+  };
+}
+
 function readStatusUpdate(formData: FormData) {
   return {
     date: String(formData.get("date") ?? ""),
@@ -82,6 +96,7 @@ export async function createApplicationAction(
 
   const created = await createApplication({
     ...application.data,
+    ...readAiFields(formData),
     first_update: firstUpdate.data,
   });
   revalidatePath("/", "layout");
@@ -137,6 +152,33 @@ export async function editStatusUpdateAction(
 export async function deleteStatusUpdateAction(applicationId: string, updateId: string) {
   await deleteStatusUpdate(applicationId, updateId);
   revalidatePath("/", "layout");
+}
+
+export type AnalysisState = { analysis?: JobAnalysis; error?: string };
+
+export async function analyseJobAdAction(text: string): Promise<AnalysisState> {
+  if (!text.trim()) return { error: "Paste the job advert first" };
+  try {
+    return { analysis: await analyseJobAd(text) };
+  } catch (error) {
+    // The browser gets a sentence, not a stack trace; the server log keeps the detail.
+    console.error(error);
+    return { error: "The advert could not be read. Try again." };
+  }
+}
+
+export async function scoreMatchAction(id: string): Promise<{ error?: string }> {
+  try {
+    await scoreMatch(id);
+  } catch (error) {
+    console.error(error);
+    if (error instanceof ApiError && error.status === 409) {
+      return { error: "Fill in your profile first, on the Profile screen." };
+    }
+    return { error: "Scoring failed. Try again." };
+  }
+  revalidatePath("/", "layout");
+  return {};
 }
 
 export async function deleteApplicationAction(id: string) {
