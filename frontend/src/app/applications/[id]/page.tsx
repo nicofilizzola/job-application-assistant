@@ -5,6 +5,7 @@ import { AddUpdateForm } from "@/components/add-update-form";
 import { AppHeader } from "@/components/app-header";
 import { DeleteApplication } from "@/components/delete-application";
 import { EditUpdateDialog } from "@/components/edit-update-dialog";
+import { MatchPanel } from "@/components/match-panel";
 import { ScoreMatchButton } from "@/components/score-match-button";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -59,15 +60,12 @@ export default async function ApplicationPage({ params }: PageProps<"/applicatio
         </dl>
 
         {application.match_rating != null && (
-          <div className="rounded-lg border p-4">
-            <p className="text-sm text-muted-foreground">AI match</p>
-            <p className="text-lg font-medium">{application.match_rating} / 5</p>
-            {application.match_summary && (
-              <p className="mt-2 text-sm break-words whitespace-pre-line">
-                {application.match_summary}
-              </p>
-            )}
-          </div>
+          <MatchPanel
+            rating={application.match_rating}
+            summary={application.match_summary}
+            strengths={application.match_strengths}
+            weaknesses={application.match_weaknesses}
+          />
         )}
 
         {application.link && (

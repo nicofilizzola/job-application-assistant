@@ -693,6 +693,21 @@ EOF
 
 ### Task 4: Render the match panel on the detail screen
 
+> **Correction, made during execution.** Step 5 cannot pass inside this task. Its assertions read the
+> two columns off the detail screen of an application created through AI mode, but nothing carries the
+> lists from the analysis into `POST /applications` until Task 5 Steps 4 and 5 add the hidden inputs
+> and `optionalList`. Until then a record created that way has `match_strengths` and
+> `match_weaknesses` null, so `MatchColumn` correctly renders nothing. The component and the detail
+> screen were verified against an application created directly through the API with both lists set:
+> the region, the rating, the summary and both `<h3>` columns all render as asserted. Task 5's Step 6,
+> which runs the whole suite, is the real gate for these assertions.
+>
+> **Resolution.** The spec edit moves to Task 5's commit; this task commits only the component and
+> the detail screen. So every commit on the branch stays green: the spec as committed here is the old
+> one, whose `3.5 / 5` and `A fixed answer` assertions the new panel satisfies unchanged. This also
+> matches the repo's own habit of landing end-to-end coverage in its own commit, as `27386be`
+> ("Cover AI mode end to end against a stubbed analyser") did.
+
 **Files:**
 - Create: `frontend/src/components/match-panel.tsx`
 - Modify: `frontend/src/app/applications/[id]/page.tsx:61-71`
@@ -716,7 +731,7 @@ EOF
   `getByRole("region", { name: "AI match" })`, and each column title is an `<h3>`, so
   `getByRole("heading", { name: "What matches well" })` works. Task 5 reuses it unchanged.
 
-- [ ] **Step 1: Write the failing assertions**
+- [x] **Step 1: Write the failing assertions**
 
 In `frontend/e2e/ai-mode.spec.ts`, replace the tail of `test("AI mode fills the form from a pasted
 advert")` - the four lines from `await page.getByRole("button", { name: "Create application"
@@ -737,7 +752,7 @@ advert")` - the four lines from `await page.getByRole("button", { name: "Create 
   await expect(page.getByText("Job advert")).toBeVisible();
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 ```bash
 cd frontend && npx playwright test ai-mode -g "fills the form"
@@ -748,7 +763,7 @@ accessible name yet. The run builds the frontend and starts both services, so al
 If it fails earlier with `TEST_DATABASE_URL is not set in backend/.env`, or with a database error
 about `match_strengths`, Task 1 Step 6 was not run against the test branch.
 
-- [ ] **Step 3: Write the component**
+- [x] **Step 3: Write the component**
 
 Create `frontend/src/components/match-panel.tsx`:
 
@@ -807,7 +822,7 @@ function MatchColumn({ title, items }: { title: string; items: string[] | null }
 }
 ```
 
-- [ ] **Step 4: Use it on the detail screen**
+- [x] **Step 4: Use it on the detail screen**
 
 In `frontend/src/app/applications/[id]/page.tsx`, add to the imports, keeping them alphabetical:
 
@@ -841,7 +856,7 @@ Expected: all four tests in the file pass. `scoring is refused while the profile
 asserts `getByText("3.5 / 5")` unscoped, which now resolves inside the panel - one element, so no
 strict-mode violation.
 
-- [ ] **Step 6: Check types and lint**
+- [x] **Step 6: Check types and lint**
 
 ```bash
 cd frontend && npx tsc --noEmit && npm run lint && npm test
@@ -850,11 +865,15 @@ cd frontend && npx tsc --noEmit && npm run lint && npm test
 Expected: all PASS. `npm test` is Vitest and is unchanged by this task - `MatchPanel` is
 render-only, which `AGENTS.md` explicitly says not to write a test for.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
+
+`frontend/e2e/ai-mode.spec.ts` is deliberately left out and stays dirty for Task 5, per the
+correction above. Do not `git add` it here.
 
 ```bash
 git add frontend/src/components/match-panel.tsx \
-        "frontend/src/app/applications/[id]/page.tsx" frontend/e2e/ai-mode.spec.ts
+        "frontend/src/app/applications/[id]/page.tsx" \
+        .agents/plans/17-08-2026-ai-match-columns.md
 git commit -m "$(cat <<'EOF'
 Show the AI match as a summary and two columns
 
