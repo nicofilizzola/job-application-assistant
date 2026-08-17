@@ -1,8 +1,12 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
-/** Reads a .env file without pulling in a dependency just for the test config. */
+/** Reads a .env file without pulling in a dependency just for the test config. A CI runner has no
+ *  such file and passes the same names in its environment instead, so an absent file is not an
+ *  error - it means the values are already here. */
 function readEnv(path: string): Record<string, string> {
+  if (!existsSync(path)) return process.env as Record<string, string>;
+
   const values: Record<string, string> = {};
   for (const line of readFileSync(path, "utf8").split("\n")) {
     const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
