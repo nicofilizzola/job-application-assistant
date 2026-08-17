@@ -1079,7 +1079,7 @@ three-sentence paragraph. This task is documentation only - no code, no tests.
 **Files:**
 - Modify: `AGENTS.md` (MVP scope, Screens 3 and 4, Schema, Testing focus, Deferred decisions)
 
-- [ ] **Step 1: Update the MVP scope bullet**
+- [x] **Step 1: Update the MVP scope bullet**
 
 Under `### MVP scope`, replace:
 
@@ -1094,7 +1094,7 @@ with:
   to four short entries each - what matches well, and weaknesses (optional)
 ```
 
-- [ ] **Step 2: Update Screens 3 and 4**
+- [x] **Step 2: Update Screens 3 and 4**
 
 Under `### Screens`, in item 3, replace `the AI match and its justification` with:
 
@@ -1117,7 +1117,7 @@ with:
    before saving. Every field stays editable and nothing is written until the form is submitted.
 ```
 
-- [ ] **Step 3: Update the schema block**
+- [x] **Step 3: Update the schema block**
 
 Under `### Schema`, in the `applications` table, replace these three lines:
 
@@ -1137,7 +1137,7 @@ with:
   match_weaknesses text[]  null        -- up to four short entries: what does not
 ```
 
-- [ ] **Step 4: Update the testing focus**
+- [x] **Step 4: Update the testing focus**
 
 Under `### Testing focus`, in the **pytest** list, replace:
 
@@ -1152,7 +1152,7 @@ with:
 - That re-scoring replaces both match lists wholesale rather than adding to them
 ```
 
-- [ ] **Step 5: Update the deferred decisions**
+- [x] **Step 5: Update the deferred decisions**
 
 Under `## Deferred decisions`, replace:
 
@@ -1175,7 +1175,7 @@ with:
   alongside `half_step` is the fix.
 ```
 
-- [ ] **Step 6: Check nothing else went stale**
+- [x] **Step 6: Check nothing else went stale**
 
 ```bash
 cd "C:/Users/Nicolas FILIZZOLA/dev-workspace/job-application-assistant" && grep -rn "three-sentence\|three sentences" --include="*.md" --include="*.py" --include="*.tsx" --include="*.ts" .
@@ -1183,7 +1183,7 @@ cd "C:/Users/Nicolas FILIZZOLA/dev-workspace/job-application-assistant" && grep 
 
 Expected: no hits outside `.agents/plans/`, which is a historical record and is not edited.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add AGENTS.md
