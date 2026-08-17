@@ -97,3 +97,51 @@ jobs:
 
       - name: Test
         run: npm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    # Serialised behind backend, which truncates the same Neon test branch this job seeds. Also
+    # behind frontend, so a lint error does not cost five minutes of browser time to discover.
+    needs: [backend, frontend]
+    env:
+      # playwright.config.ts reads this and hands it to the backend it starts as DATABASE_URL.
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Install backend dependencies
+        # Playwright starts the backend itself and allows that command 120 seconds. A cold `uv run`
+        # that first downloads Python 3.13 and builds psycopg does not fit, so the sync happens here
+        # where it has the whole job to finish in.
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Test
+        run: npm run test:e2e
+        working-directory: frontend
+
+      - name: Keep the traces from a failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: frontend/test-results/
+          retention-days: 7
