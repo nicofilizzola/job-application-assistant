@@ -287,6 +287,11 @@ Split by service. The frontend has no database access at all.
 Both point at the same Neon database. Use a Neon branch for development so the imported data can be
 reset without touching production.
 
+If anything that talks to Postgres hangs for a minute and then reports `server closed the connection
+unexpectedly`, read `.agents/notes/local-database-access.md` before debugging. Neon has been
+unreachable on port 5432 from the development machine since 15 August 2026; that note explains how to
+confirm it, and how to run the suites against a local container in the meantime.
+
 ### Deployment
 
 Two Vercel projects from the one repo, distinguished by root directory:
