@@ -56,6 +56,8 @@ export default defineConfig({
       env: {
         DATABASE_URL: backend.TEST_DATABASE_URL,
         BACKEND_API_KEY: frontend.BACKEND_API_KEY,
+        // The analyse call is made server-side, so page.route() cannot reach it. The seam is here.
+        AI_STUB: "true",
       },
       timeout: 120_000,
       reuseExistingServer: false,
