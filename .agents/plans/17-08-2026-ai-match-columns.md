@@ -642,19 +642,19 @@ one reviewable commit, and so Tasks 4 and 5 can rely on the types being there.
   these through the existing `ApplicationDetail` and `JobAnalysis` aliases in
   `frontend/src/lib/api.ts`.
 
-- [ ] **Step 1: Export the schema**
+- [x] **Step 1: Export the schema**
 
 ```bash
 cd backend && uv run python -m scripts.export_openapi
 ```
 
-- [ ] **Step 2: Generate the types**
+- [x] **Step 2: Generate the types**
 
 ```bash
 cd frontend && npm run gen:types
 ```
 
-- [ ] **Step 3: Verify both fields arrived**
+- [x] **Step 3: Verify both fields arrived**
 
 ```bash
 cd frontend && grep -n "match_strengths" src/lib/api-types.ts
@@ -664,7 +664,7 @@ Expected: at least three hits - one each inside `ApplicationCreate`, `Applicatio
 `JobAnalysis`. If there are none, `backend/openapi.json` was not re-exported; run Step 1 again from
 `backend/`, not from the repo root.
 
-- [ ] **Step 4: Check the frontend still compiles**
+- [x] **Step 4: Check the frontend still compiles**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -673,7 +673,7 @@ cd frontend && npx tsc --noEmit
 Expected: PASS. Nothing reads the new fields yet, and adding properties to a response type breaks
 nothing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/openapi.json frontend/src/lib/api-types.ts
