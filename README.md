@@ -63,8 +63,12 @@ database before and after.
 
 ## Deploy
 
+Pushing to `main` deploys. `.github/workflows/ci.yml` runs ruff, pytest, eslint, tsc, Vitest and the
+Playwright suite; if all of them pass it migrates the production database, deploys the backend, then
+deploys the frontend. A push to any other branch runs the same checks and deploys nothing.
+
 Both projects deploy from the repository root, because the frontend build reads
-`backend/openapi.json`. Their root directories are set on Vercel.
+`backend/openapi.json`. Their root directories are set on Vercel. To deploy by hand anyway:
 
 ```bash
 vercel deploy --prod --project job-application-assistant-api
@@ -73,3 +77,9 @@ vercel deploy --prod --project job-application-assistant
 
 `DATABASE_URL` and `OPENAI_API_KEY` belong to the backend project only. The frontend holds
 `APP_PASSWORD`, `AUTH_SECRET`, `BACKEND_URL` and `BACKEND_API_KEY`.
+
+The pipeline needs six repository secrets: `TEST_DATABASE_URL` and `PROD_DATABASE_URL`,
+`VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID_API` and `VERCEL_PROJECT_ID_WEB`. The login
+password, the auth secret and the API key used in CI are throwaway literals in the workflow file:
+both services under test are local to the runner. Vercel's own Git integration is disconnected on
+both projects, so that a push is not deployed twice.

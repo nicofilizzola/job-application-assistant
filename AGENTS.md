@@ -339,6 +339,32 @@ Serverless consequences to design around, not discover: use Neon's **pooled** en
 `NullPool`, since connections cannot be reused across invocations. Expect a cold start of roughly a
 second on the first request. No background work, no scheduled jobs, no long-lived state.
 
+### Continuous integration
+
+`.github/workflows/ci.yml` is the only route to production. Six jobs: `backend`, `frontend` and
+`e2e` on every push, then `migrate`, `deploy-api` and `deploy-web` on `main` only, chained behind
+them with `needs`.
+
+- **The whole suite gates the deploy**, Playwright included. It is the only check that exercises
+  browser to Next to FastAPI to Neon together, which is what a deploy risks
+- **`pytest` and Playwright share the Neon `test` branch and both truncate it**, so they cannot
+  overlap. `e2e` declares `needs: [backend, frontend]`, and one repository-wide `concurrency` group
+  queues runs rather than cancelling them
+- **CI migrates the `test` branch before `pytest`**, so a commit carrying a new migration is not
+  tested against a stale schema, and every migration is applied to a throwaway database before
+  production sees it
+- **Migrations run before the backend deploys**, which means a migration must leave the currently
+  deployed code working. Add columns, do not rename or drop them in the same commit that stops
+  using them
+- **The backend deploys before the frontend**, so a changed API contract exists before anything
+  calls it
+- **Vercel's Git integration is disconnected on both projects.** Left on, every push would deploy
+  twice: once immediately and ungated, once through this pipeline
+- **`tsc` needs `next typegen` first.** `PageProps` and `LayoutProps` are generated into
+  `.next/types/`, which is gitignored, so a type check on a fresh checkout fails without it
+- The API key, login password and auth secret used in CI are literals in the workflow file. The
+  services they protect are local to the runner and die with the job
+
 ### Language
 
 UI, labels, statuses, and code are all in **English**. Existing free-text data stays in whatever
@@ -441,6 +467,22 @@ rediscovered:
   so Playwright cannot intercept it from the browser and the seam has to exist in the backend.
 - **An edit never rewrites `created_at`.** An entry edited onto a date it now shares with another
   still ties by original write order. Correct, but not obvious from the UI, which shows no times.
+- **Vercel builds remotely, from CI.** Actions calls `vercel deploy --prod` rather than building
+  locally and pushing with `--prebuilt`. Building locally would mean `vercel pull` writing `.vercel/`
+  for two projects that both deploy from the repository root, and compiling a Python function on a
+  runner, to move build minutes off Vercel. If build feedback ever needs to be faster than a remote
+  build, `--prebuilt` is the change.
+- **One Neon `test` branch, shared and serialised.** `pytest` and Playwright both truncate it, so the
+  pipeline runs them in sequence behind a single repository-wide concurrency group. Two branches
+  would let them run at once and cut a couple of minutes off every push; one branch is one fewer
+  thing to keep migrated.
+- **The Vercel CLI is not pinned in CI.** `npm install -g vercel@latest` means a CLI break shows up
+  as a failed deploy rather than a bad one, which is the right failure to take unattended. Pinning
+  the major in that one step is the fix if it ever happens.
+- **Chromium is installed without `--with-deps`.** That flag shells out to `sudo apt-get` and hung
+  for 24 minutes on the first end-to-end run. The runner image already carries the shared libraries.
+  If a future Playwright version needs one the image lacks, it names the library, and installing
+  that single package beats reinstating the flag.
 
 ## Strategy
 
