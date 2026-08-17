@@ -34,7 +34,7 @@ def override_get_session() -> Iterator[Session]:
 @pytest.fixture(autouse=True)
 def clean_database() -> None:
     with test_engine.begin() as connection:
-        connection.execute(text("truncate applications cascade"))
+        connection.execute(text("truncate applications, profile cascade"))
 
 
 @pytest.fixture

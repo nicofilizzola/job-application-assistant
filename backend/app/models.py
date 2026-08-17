@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import REAL, Date, DateTime, ForeignKey, Index, Text, func
+from sqlalchemy import REAL, CheckConstraint, Date, DateTime, ForeignKey, Index, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -20,6 +20,11 @@ class Application(Base):
     rating: Mapped[float | None] = mapped_column(REAL)
     comment: Mapped[str | None] = mapped_column(Text)
     link: Mapped[str | None] = mapped_column(Text)
+    # Written by AI mode and by the re-score route, never by a hand edit: ApplicationPatch
+    # deliberately has no field for any of them.
+    job_ad: Mapped[str | None] = mapped_column(Text)
+    match_rating: Mapped[float | None] = mapped_column(REAL)
+    match_summary: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -61,6 +66,22 @@ class StatusUpdate(Base):
     )
 
     application: Mapped[Application] = relationship(back_populates="updates")
+
+
+PROFILE_ID = 1
+
+
+class Profile(Base):
+    """The candidate's own background, scored against. One user, so exactly one row."""
+
+    __tablename__ = "profile"
+    __table_args__ = (CheckConstraint(f"id = {PROFILE_ID}", name="profile_is_one_row"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=PROFILE_ID)
+    content: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
 
 
 # Serves the latest-update-per-application lookup: filter by application, take the first row.
