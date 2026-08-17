@@ -131,7 +131,10 @@ jobs:
         working-directory: frontend
 
       - name: Install the browser
-        run: npx playwright install --with-deps chromium
+        # No --with-deps: it shells out to sudo apt-get, which hung for 24 minutes on the first run.
+        # The ubuntu-24.04 image already carries Chromium's shared libraries, so only the browser
+        # binary is missing. If a library ever does turn out to be absent, Playwright names it.
+        run: npx playwright install chromium
         working-directory: frontend
 
       - name: Test
