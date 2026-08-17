@@ -22,6 +22,8 @@ An application record holds:
 - Personal rating (1-5, half points allowed, optional)
 - Comment (free text, multi-line, optional)
 - Job posting link (optional)
+- The pasted job advert, when the record was created from one (optional)
+- An AI match rating (1-5, half points) and its three-sentence justification (optional)
 - A list of dated status updates
 
 ### Status updates are the source of truth
@@ -61,13 +63,19 @@ information the single spreadsheet value was compressing.
 
 1. **Login** - single password field.
 2. **Application list** - the main screen. One row per application showing title, company, sector,
-   location, rating, current status, and date of last update. Sorted by last update, most recent
-   first. A single `Hide closed` toggle, on by default: a third of the existing 26 rows are already
-   `Rejected` or `Withdrawn`, and they should not be the first thing seen.
-3. **Application detail** - all fields, the job posting link, and the full status timeline in reverse
-   chronological order. Add a status update from here; correct or delete an existing one from a
-   dialog on the same screen.
-4. **Create / edit application** - one form. Creating requires an initial status and its date.
+   location, rating, the AI match rating when there is one, current status, and date of last update.
+   Sorted by last update, most recent first. A single `Hide closed` toggle, on by default: a third of
+   the existing 26 rows are already `Rejected` or `Withdrawn`, and they should not be the first thing
+   seen.
+3. **Application detail** - all fields, the job posting link, the AI match and its justification, the
+   pasted advert in a collapsed block, and the full status timeline in reverse chronological order.
+   Add a status update from here; correct or delete an existing one from a dialog on the same screen.
+   Re-score the match from here too, when an advert was stored.
+4. **Create / edit application** - one form. Creating requires an initial status and its date. An
+   `AI mode` toggle on the create form takes a pasted job advert, fills the fields in from it, and
+   scores the match. Every field stays editable and nothing is written until the form is submitted.
+5. **Profile** - one textarea holding the candidate's background, reached from the header. AI mode
+   scores adverts against it. Empty until written, which is a supported state, not an error.
 
 Delete is available from the detail screen and cascades to that application's updates.
 
@@ -78,6 +86,9 @@ oversights: search, filtering beyond `Hide closed`, sorting by other columns, ka
 board, follow-up reminders, CV/cover-letter attachments and versioning, statistics or charts, CSV
 export, in-app CSV import, email or LinkedIn integration, multi-user support, salary tracking,
 contact/recruiter records, tags.
+
+AI mode extracts fields from a pasted advert and scores the match. It does not fetch a URL, write
+cover letters, or suggest what to apply to next.
 
 ### Data migration
 
@@ -179,6 +190,10 @@ the filter runs in SQL rather than dropping rows client-side.
 | `POST`   | `/applications/{id}/status-updates`            | Append a status update                           |
 | `PATCH`  | `/applications/{id}/status-updates/{update_id}` | Edit one timeline entry                         |
 | `DELETE` | `/applications/{id}/status-updates/{update_id}` | Delete one entry, never the last                |
+| `POST`   | `/applications/{id}/match`                     | Re-score a stored advert against the profile     |
+| `POST`   | `/job-ads/analyse`                             | Extract fields and score one pasted advert       |
+| `GET`    | `/profile`                                     | Read the candidate profile                       |
+| `PUT`    | `/profile`                                     | Replace the candidate profile                    |
 
 A status update is addressed through its application, so an update id under the wrong application is
 a `404` rather than a cross-record write. Deleting an application's only update is a `409`: the
@@ -202,8 +217,16 @@ applications
   rating       real        null        -- 1.0-5.0, 0.5 steps
   comment      text        null
   link         text        null
+  job_ad        text       null        -- the advert as pasted, when AI mode created the record
+  match_rating  real       null        -- 1.0-5.0, 0.5 steps, written by AI only
+  match_summary text       null        -- three sentences justifying match_rating
   created_at   timestamptz not null default now()
   updated_at   timestamptz not null
+
+profile
+  id             integer primary key check (id = 1)   -- one candidate, one row
+  content        text        not null
+  updated_at     timestamptz not null
 
 status_updates
   id             uuid primary key
@@ -278,6 +301,9 @@ Split by service. The frontend has no database access at all.
 | ------------------ | ------------------------------------------- |
 | `DATABASE_URL`     | Neon Postgres connection string             |
 | `BACKEND_API_KEY`  | Same value the frontend sends               |
+| `OPENAI_API_KEY`   | Key for the extraction and scoring call     |
+| `OPENAI_MODEL`     | Optional. Defaults to `gpt-5.5`             |
+| `AI_STUB`          | Test only. Playwright sets it to skip OpenAI |
 
 ### Local development
 
@@ -329,13 +355,23 @@ Nearly all the tricky logic now lives in Python, so nearly all the unit tests do
   application's id
 - That editing a date does not rewrite `created_at`, so an entry edited into a same-date tie still
   resolves by original write order
+- The half-point snap on whatever the model returns, including out-of-range values
+- That `ApplicationPatch` cannot write `match_rating`, `match_summary` or `job_ad`
+- That re-scoring with an empty profile is refused rather than erasing the existing score
+- What the analyser is handed: the pasted advert and the stored profile, with the OpenAI call
+  replaced by a recorder through a FastAPI dependency override
 
 **Vitest** - only where real logic exists on the frontend: status-to-colour mapping, date
-formatting. Render-only components do not need tests written to reach a coverage number.
+formatting. Render-only components do not need tests written to reach a coverage number. The suite
+runs in a timezone pinned in `vitest.config.mts`, west of UTC, so the date helpers are exercised
+where local and UTC actually differ. Do not set `TZ` inside a test: Node keeps the last zone it
+read, so the change leaks into every later test in the file and cannot be undone.
 
 **Playwright** - login, create an application with its first status update, add a second update and
 see the current status change, correct and delete a timeline entry, `Hide closed` toggle behaviour,
-edit, delete. Runs against both services, which means the suite starts two processes.
+edit, delete, and AI mode with the analyser stubbed. Runs against both services, which means the
+suite starts two processes. The database is emptied once at the start and once at the end, not
+between tests, so an assertion that could match another test's record needs scoping to its own row.
 
 ## Color Scheme
 
@@ -382,6 +418,16 @@ rediscovered:
 - **A status update has no route of its own.** Editing and deleting one happens in a dialog on the
   detail screen rather than at a dedicated URL, because the form is three fields. The consequence is
   that an edit is not linkable and not resumable, which for one user correcting a typo is fine.
+- **The match is AI-owned and read-only.** `ApplicationCreate` accepts the three AI fields and
+  `ApplicationPatch` has no field for any of them, so a score cannot be hand-tuned. The cost is that
+  a wrong score can only be replaced by re-scoring, never corrected or cleared.
+- **The advert is stored as pasted.** No tidying pass, so the detail screen shows a raw copy-paste,
+  including whatever navigation text came with it. It is collapsed by default for that reason.
+- **One model call does extraction and scoring together.** Two calls would separate a mechanical job
+  from a judgement, but they would also be two round trips behind one spinner. If the score quality
+  ever looks like it is suffering from sharing a prompt, splitting them is the first thing to try.
+- **`AI_STUB` is test-only configuration in production code.** The analyse call is made server-side,
+  so Playwright cannot intercept it from the browser and the seam has to exist in the backend.
 - **An edit never rewrites `created_at`.** An entry edited onto a date it now shares with another
   still ties by original write order. Correct, but not obvious from the UI, which shows no times.
 

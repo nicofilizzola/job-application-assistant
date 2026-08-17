@@ -22,6 +22,10 @@ cp frontend/.env.example frontend/.env.local
 Point `backend/.env` at the Neon `dev` branch, never `main`. `TEST_DATABASE_URL` needs the `test`
 branch: the suite truncates it between cases.
 
+`OPENAI_API_KEY` is needed for AI mode, which reads a pasted job advert and scores it against the
+profile written at `/profile`. The test suites never call OpenAI, but the backend builds its client
+at import, so the variable has to be set for anything to start.
+
 ## Run
 
 Backend on port 8000, frontend on port 3000. Both commands run from their own directory.
@@ -67,5 +71,5 @@ vercel deploy --prod --project job-application-assistant-api
 vercel deploy --prod --project job-application-assistant
 ```
 
-`DATABASE_URL` belongs to the backend project only. The frontend holds `APP_PASSWORD`,
-`AUTH_SECRET`, `BACKEND_URL` and `BACKEND_API_KEY`.
+`DATABASE_URL` and `OPENAI_API_KEY` belong to the backend project only. The frontend holds
+`APP_PASSWORD`, `AUTH_SECRET`, `BACKEND_URL` and `BACKEND_API_KEY`.
