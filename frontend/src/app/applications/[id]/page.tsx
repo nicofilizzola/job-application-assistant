@@ -5,6 +5,7 @@ import { AddUpdateForm } from "@/components/add-update-form";
 import { AppHeader } from "@/components/app-header";
 import { DeleteApplication } from "@/components/delete-application";
 import { EditUpdateDialog } from "@/components/edit-update-dialog";
+import { ScoreMatchButton } from "@/components/score-match-button";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,18 @@ export default async function ApplicationPage({ params }: PageProps<"/applicatio
           </div>
         </dl>
 
+        {application.match_rating != null && (
+          <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">AI match</p>
+            <p className="text-lg font-medium">{application.match_rating} / 5</p>
+            {application.match_summary && (
+              <p className="mt-2 text-sm break-words whitespace-pre-line">
+                {application.match_summary}
+              </p>
+            )}
+          </div>
+        )}
+
         {application.link && (
           <div className="text-sm">
             <p className="text-muted-foreground">Job posting</p>
@@ -78,11 +91,21 @@ export default async function ApplicationPage({ params }: PageProps<"/applicatio
           </div>
         )}
 
-        <div className="flex gap-2">
+        {application.job_ad && (
+          <details className="rounded-lg border p-4 text-sm">
+            <summary className="cursor-pointer text-muted-foreground">Job advert</summary>
+            <p className="mt-3 break-words whitespace-pre-line">{application.job_ad}</p>
+          </details>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href={`/applications/${application.id}/edit`}>Edit</Link>
           </Button>
           <DeleteApplication id={application.id} title={application.title} />
+          {application.job_ad && (
+            <ScoreMatchButton id={application.id} scored={application.match_rating != null} />
+          )}
         </div>
 
         <Card>
