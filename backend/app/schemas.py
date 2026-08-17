@@ -27,6 +27,26 @@ def _on_a_half_step(value: float) -> float:
 Rating = Annotated[float, Field(ge=1, le=5), AfterValidator(_on_a_half_step)]
 
 
+class JobAdText(BaseModel):
+    text: str = Field(min_length=1)
+
+
+class JobAnalysis(BaseModel):
+    """What one model call returns. Also the response body of POST /job-ads/analyse.
+
+    The match fields are null when there is no profile to score against. No defaults: OpenAI's
+    strict structured outputs require every property to be required, and nullability is how
+    "absent" is expressed.
+    """
+
+    title: str
+    company: str
+    sector: str
+    location: str
+    match_rating: float | None
+    match_summary: str | None
+
+
 class StatusUpdateCreate(BaseModel):
     date: datetime.date
     status: Status
