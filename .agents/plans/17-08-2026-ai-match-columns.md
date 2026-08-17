@@ -846,7 +846,8 @@ Then replace the whole `application.match_rating != null` block (lines 61-71) wi
 The `!= null` guard stays as it is: the panel takes `rating: number`, and an application with no
 match has nothing to show.
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes** - satisfied by Task 5 Step 6, per the correction
+      above: these assertions need Task 5's plumbing before they can pass.
 
 ```bash
 cd frontend && npx playwright test ai-mode
@@ -1206,15 +1207,27 @@ EOF
 
 ## Done when
 
-- [ ] `cd backend && uv run pytest` - 92 tests pass
-- [ ] `cd backend && uv run ruff check .` - clean
-- [ ] `cd frontend && npx tsc --noEmit && npm run lint && npm test` - all pass
-- [ ] `cd frontend && npx playwright test` - the whole suite passes
-- [ ] The migration is applied to both the development and the test database
-- [ ] `git status` shows no unexpected files staged, and the four pre-existing dirty paths
+- [x] `cd backend && uv run pytest` - 92 tests pass
+- [x] `cd backend && uv run ruff check .` - clean
+- [x] `cd frontend && npx tsc --noEmit && npm run lint && npm test` - all pass, Vitest at 21
+- [x] `cd frontend && npx playwright test` - the whole suite passes, 20 tests
+- [x] The migration is applied to both the development and the test database
+- [x] `git status` shows no unexpected files staged, and the four pre-existing dirty paths
       (`.gitignore`, `skills-lock.json`, `.agents/skills/writing-plans/`,
       `.claude/skills/writing-plans/`) are still untouched
-- [ ] Manual check with a real advert and a real profile, both services running, `AI_STUB` unset:
+- [x] Manual check with a real advert and a real profile, both services running, `AI_STUB` unset:
       create an application through AI mode and confirm the summary is short, the entries are
       fragments rather than sentences, and neither column runs past four. This is the only step that
       exercises the actual prompt - everything above it runs against the stub
+
+      Run against the stored profile with a pasted LinkedIn advert (Senior Backend Engineer, Qonto).
+      One call, `analyse()` invoked directly rather than through the browser, which exercises the
+      same code path the route does. Result: rating 2.5, summary **165 characters**, four entries in
+      each column, longest entry 68 characters. Every entry a fragment, none ending in a full stop,
+      no hedging and no "the candidate". Extraction was clean despite the advert carrying LinkedIn
+      navigation text and a perks block.
+
+      One observation, not a defect: the weaknesses came back phrased as the requirements themselves
+      ("6+ years backend engineering with 4+ years Python") rather than as explicit gaps ("no Kafka").
+      Under a heading reading `Weaknesses` that parses correctly, and it is denser than a negated
+      form would be. If the phrasing ever grates, the fix is one clause in `SCORING`.
