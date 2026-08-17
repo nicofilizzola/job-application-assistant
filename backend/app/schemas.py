@@ -47,6 +47,17 @@ class JobAnalysis(BaseModel):
     match_summary: str | None
 
 
+class ProfileWrite(BaseModel):
+    content: str
+
+
+class ProfileRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    content: str
+    updated_at: datetime.datetime | None
+
+
 class StatusUpdateCreate(BaseModel):
     date: datetime.date
     status: Status
