@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import REAL, CheckConstraint, Date, DateTime, ForeignKey, Index, Text, func
+from sqlalchemy import ARRAY, REAL, CheckConstraint, Date, DateTime, ForeignKey, Index, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -25,6 +25,11 @@ class Application(Base):
     job_ad: Mapped[str | None] = mapped_column(Text)
     match_rating: Mapped[float | None] = mapped_column(REAL)
     match_summary: Mapped[str | None] = mapped_column(Text)
+    # Always assigned a whole new list, never mutated in place: SQLAlchemy does not track
+    # in-place changes to an ARRAY column, so `application.match_strengths.append(...)` would
+    # never reach the database.
+    match_strengths: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
+    match_weaknesses: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

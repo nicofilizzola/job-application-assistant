@@ -124,6 +124,8 @@ def score_match(application_id: uuid.UUID, session: SessionDep, analyser: Analys
     analysis = analyser(application.job_ad, profile)
     application.match_rating = analysis.match_rating
     application.match_summary = analysis.match_summary
+    application.match_strengths = analysis.match_strengths
+    application.match_weaknesses = analysis.match_weaknesses
     session.flush()
     return application
 

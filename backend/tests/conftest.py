@@ -101,7 +101,11 @@ def stub_analyser():
             sector=fields.get("sector", "Insurtech"),
             location=fields.get("location", "Sweden"),
             match_rating=fields.get("match_rating", 3.5),
-            match_summary=fields.get("match_summary", "Three sentences would go here."),
+            match_summary=fields.get("match_summary", "Strong stack overlap, no insurtech domain."),
+            match_strengths=fields.get(
+                "match_strengths", ["Python and FastAPI", "Six years full stack"]
+            ),
+            match_weaknesses=fields.get("match_weaknesses", ["No insurtech domain"]),
         )
 
         def analyser(ad_text: str, profile: str) -> JobAnalysis:

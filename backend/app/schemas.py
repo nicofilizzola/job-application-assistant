@@ -36,7 +36,8 @@ class JobAnalysis(BaseModel):
 
     The match fields are null when there is no profile to score against. No defaults: OpenAI's
     strict structured outputs require every property to be required, and nullability is how
-    "absent" is expressed.
+    "absent" is expressed. The 210-character summary and the four-entry lists are prompt rules,
+    not constraints here - a length limit in this model would turn a chatty model into a 500.
     """
 
     title: str
@@ -45,6 +46,8 @@ class JobAnalysis(BaseModel):
     location: str
     match_rating: float | None
     match_summary: str | None
+    match_strengths: list[str] | None
+    match_weaknesses: list[str] | None
 
 
 class ProfileWrite(BaseModel):
@@ -105,6 +108,8 @@ class ApplicationCreate(ApplicationFields):
     job_ad: str | None = None
     match_rating: Rating | None = None
     match_summary: str | None = None
+    match_strengths: list[str] | None = None
+    match_weaknesses: list[str] | None = None
 
 
 class ApplicationPatch(BaseModel):
@@ -153,6 +158,8 @@ class ApplicationDetail(BaseModel):
     job_ad: str | None
     match_rating: float | None
     match_summary: str | None
+    match_strengths: list[str] | None
+    match_weaknesses: list[str] | None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     current_status: Status
