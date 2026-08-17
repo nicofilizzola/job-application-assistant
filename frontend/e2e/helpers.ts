@@ -42,6 +42,7 @@ export async function createApplication(
     rating?: string;
     status?: string;
     date: string;
+    note?: string;
   },
 ): Promise<void> {
   await page.goto("/applications/new");
@@ -52,6 +53,7 @@ export async function createApplication(
   if (fields.rating) await page.getByLabel("Rating").selectOption(fields.rating);
   await page.getByLabel("Status").selectOption(fields.status ?? "Applied");
   await page.getByLabel("Date").fill(fields.date);
+  if (fields.note) await page.getByLabel("Note").fill(fields.note);
   await page.getByRole("button", { name: "Create application" }).click();
   await expect(page.getByRole("heading", { name: fields.title })).toBeVisible();
 }
@@ -82,4 +84,41 @@ export function row(page: Page, title: string) {
 
 export function timeline(page: Page) {
   return page.getByRole("list", { name: "Timeline" });
+}
+
+/** Rows are addressed by their note - it is the only text that distinguishes one entry visually. */
+export async function openUpdateDialog(page: Page, note: string) {
+  await timeline(page)
+    .getByRole("listitem")
+    .filter({ hasText: note })
+    .getByRole("button", { name: "Edit" })
+    .click();
+  return page.getByRole("dialog");
+}
+
+export async function editUpdate(
+  page: Page,
+  note: string,
+  changes: { status?: string; date?: string; note?: string },
+) {
+  const dialog = await openUpdateDialog(page, note);
+  if (changes.status) await dialog.getByLabel("Status").selectOption(changes.status);
+  if (changes.date) await dialog.getByLabel("Date").fill(changes.date);
+  if (changes.note !== undefined) await dialog.getByLabel("Note").fill(changes.note);
+  await dialog.getByRole("button", { name: "Save update" }).click();
+  // The dialog closing is the signal that the action finished, same reason addUpdate waits.
+  await expect(dialog).toBeHidden();
+}
+
+export async function deleteUpdate(page: Page, note: string) {
+  const entries = timeline(page).getByRole("listitem");
+  // count() does not auto-wait, so the timeline has to be rendered before it is read - otherwise a
+  // call made straight after a navigation counts zero and the assertion below expects one fewer.
+  await expect(entries.first()).toBeVisible();
+  const before = await entries.count();
+
+  const dialog = await openUpdateDialog(page, note);
+  await dialog.getByRole("button", { name: "Delete update" }).click();
+
+  await expect(entries).toHaveCount(before - 1);
 }

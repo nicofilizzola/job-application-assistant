@@ -7,6 +7,7 @@ export type ApplicationDetail = components["schemas"]["ApplicationDetail"];
 export type ApplicationCreate = components["schemas"]["ApplicationCreate"];
 export type ApplicationPatch = components["schemas"]["ApplicationPatch"];
 export type StatusUpdateCreate = components["schemas"]["StatusUpdateCreate"];
+export type StatusUpdatePatch = components["schemas"]["StatusUpdatePatch"];
 export type StatusUpdateRead = components["schemas"]["StatusUpdateRead"];
 
 export class ApiError extends Error {
@@ -69,5 +70,22 @@ export function addStatusUpdate(id: string, body: StatusUpdateCreate) {
   return call<ApplicationDetail>(`/applications/${id}/status-updates`, {
     method: "POST",
     body: JSON.stringify(body),
+  });
+}
+
+export function patchStatusUpdate(
+  applicationId: string,
+  updateId: string,
+  body: StatusUpdatePatch,
+) {
+  return call<ApplicationDetail>(`/applications/${applicationId}/status-updates/${updateId}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteStatusUpdate(applicationId: string, updateId: string) {
+  return call<void>(`/applications/${applicationId}/status-updates/${updateId}`, {
+    method: "DELETE",
   });
 }

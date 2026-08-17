@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select, true
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from app.db import get_session
@@ -14,6 +14,7 @@ from app.schemas import (
     ApplicationListItem,
     ApplicationPatch,
     StatusUpdateCreate,
+    StatusUpdatePatch,
 )
 from app.security import require_api_key
 
@@ -31,6 +32,15 @@ def _load(session: Session, application_id: uuid.UUID) -> Application:
     if application is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Application not found")
     return application
+
+
+def _load_update(session: Session, application_id: uuid.UUID, update_id: uuid.UUID) -> StatusUpdate:
+    # Scoped by the parent, so an update can never be reached through the wrong application - and
+    # an unknown application id therefore matches nothing, which is the 404 we want anyway.
+    update = session.get(StatusUpdate, update_id)
+    if update is None or update.application_id != application_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Status update not found")
+    return update
 
 
 @router.get("", response_model=list[ApplicationListItem])
@@ -106,3 +116,40 @@ def add_status_update(application_id: uuid.UUID, payload: StatusUpdateCreate, se
     session.flush()
     session.refresh(application)
     return application
+
+
+@router.patch("/{application_id}/status-updates/{update_id}", response_model=ApplicationDetail)
+def update_status_update(
+    application_id: uuid.UUID,
+    update_id: uuid.UUID,
+    payload: StatusUpdatePatch,
+    session: SessionDep,
+):
+    update = _load_update(session, application_id, update_id)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(update, field, value)
+    session.flush()
+    application = update.application
+    # Both derived fields read updates[0]. The refresh re-runs the relationship's ORDER BY, so an
+    # edited date reorders the timeline in the response rather than returning the loaded order.
+    session.refresh(application)
+    return application
+
+
+@router.delete(
+    "/{application_id}/status-updates/{update_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_status_update(application_id: uuid.UUID, update_id: uuid.UUID, session: SessionDep):
+    update = _load_update(session, application_id, update_id)
+    remaining = session.scalar(
+        select(func.count())
+        .select_from(StatusUpdate)
+        .where(StatusUpdate.application_id == application_id)
+    )
+    # The current status is derived from the updates, so an application with none has no status.
+    if remaining == 1:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "An application must keep at least one status update"
+        )
+    session.delete(update)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

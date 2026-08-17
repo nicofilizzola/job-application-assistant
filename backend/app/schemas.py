@@ -33,6 +33,20 @@ class StatusUpdateCreate(BaseModel):
     note: str | None = None
 
 
+class StatusUpdatePatch(BaseModel):
+    date: datetime.date | None = None
+    status: Status | None = None
+    note: str | None = None
+
+    @field_validator("date", "status")
+    @classmethod
+    def reject_explicit_null(cls, value: datetime.date | Status) -> datetime.date | Status:
+        """Defaults skip validation, so this only fires when the field was sent as null."""
+        if value is None:
+            raise ValueError("cannot be cleared")
+        return value
+
+
 class StatusUpdateRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

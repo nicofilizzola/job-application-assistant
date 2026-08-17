@@ -58,6 +58,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{application_id}/status-updates/{update_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Status Update */
+        delete: operations["delete_status_update_applications__application_id__status_updates__update_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Status Update */
+        patch: operations["update_status_update_applications__application_id__status_updates__update_id__patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -196,6 +214,14 @@ export interface components {
              */
             date: string;
             status: components["schemas"]["Status"];
+            /** Note */
+            note?: string | null;
+        };
+        /** StatusUpdatePatch */
+        StatusUpdatePatch: {
+            /** Date */
+            date?: string | null;
+            status?: components["schemas"]["Status"] | null;
             /** Note */
             note?: string | null;
         };
@@ -430,6 +456,76 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_status_update_applications__application_id__status_updates__update_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path: {
+                application_id: string;
+                update_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_status_update_applications__application_id__status_updates__update_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path: {
+                application_id: string;
+                update_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusUpdatePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

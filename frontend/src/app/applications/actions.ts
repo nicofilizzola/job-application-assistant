@@ -8,11 +8,13 @@ import {
   addStatusUpdate,
   createApplication,
   deleteApplication,
+  deleteStatusUpdate,
   patchApplication,
+  patchStatusUpdate,
 } from "@/lib/api";
 import { STATUSES, type Status } from "@/lib/status";
 
-export type FormState = { errors?: Record<string, string[]> };
+export type FormState = { errors?: Record<string, string[]>; saved?: boolean };
 
 const applicationSchema = z.object({
   title: z.string().min(1, "Job title is required"),
@@ -114,6 +116,27 @@ export async function addStatusUpdateAction(
   await addStatusUpdate(id, update.data);
   revalidatePath("/", "layout");
   return {};
+}
+
+export async function editStatusUpdateAction(
+  applicationId: string,
+  updateId: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const update = statusUpdateSchema.safeParse(readStatusUpdate(formData));
+  if (!update.success) {
+    return { errors: z.flattenError(update.error).fieldErrors };
+  }
+
+  await patchStatusUpdate(applicationId, updateId, update.data);
+  revalidatePath("/", "layout");
+  return { saved: true };
+}
+
+export async function deleteStatusUpdateAction(applicationId: string, updateId: string) {
+  await deleteStatusUpdate(applicationId, updateId);
+  revalidatePath("/", "layout");
 }
 
 export async function deleteApplicationAction(id: string) {
