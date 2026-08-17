@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One group for the whole repository, not one per branch: pytest and the Playwright suite both
+# truncate the same Neon test branch, so two runs at once would delete each other's rows. Queued
+# rather than cancelled, so a push to main never loses its deploy to a branch push that arrived
+# first.
+concurrency:
+  group: ci
+  cancel-in-progress: false
+
+env:
+  # Throwaway CI values, not secrets. Both services under test are started by the runner, reachable
+  # only from it, and die with the job. They must never match the real values in Vercel.
+  BACKEND_API_KEY: ci-api-key
+  APP_PASSWORD: ci-password
+  AUTH_SECRET: ci-auth-secret-not-the-real-one-32-chars
+  # AI_STUB replaces the OpenAI call, but app/config.py requires the variable to exist before
+  # anything can import, so the backend needs a value here to start at all.
+  OPENAI_API_KEY: ci-openai-key-never-called
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Both names, one branch. Alembic reads DATABASE_URL and app/config.py requires it; the test
+      # suite reads TEST_DATABASE_URL. Pointing them at the same throwaway branch is the point:
+      # nothing in this job may touch production.
+      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run --frozen ruff check .
+
+      - name: Check the committed OpenAPI schema is current
+        # openapi.json is committed and the frontend build generates its types from it, so a
+        # Pydantic change that skipped the export would ship stale TypeScript that still compiles.
+        run: |
+          uv run --frozen python -m scripts.export_openapi
+          git diff --exit-code -- openapi.json
+
+      - name: Migrate the test database
+        run: uv run --frozen alembic upgrade head
+
+      - name: Test
+        run: uv run --frozen pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Both Vercel projects build on 24.x. CI matches production rather than the newest LTS.
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check types
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
