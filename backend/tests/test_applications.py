@@ -51,6 +51,9 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("/applications/{application_id}/status-updates", "POST"),
         ("/applications/{application_id}/status-updates/{update_id}", "PATCH"),
         ("/applications/{application_id}/status-updates/{update_id}", "DELETE"),
+        ("/profile", "GET"),
+        ("/profile", "PUT"),
+        ("/job-ads/analyse", "POST"),
     }
 
 
@@ -65,6 +68,9 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("POST", "/applications/{id}/status-updates"),
         ("PATCH", "/applications/{id}/status-updates/{update_id}"),
         ("DELETE", "/applications/{id}/status-updates/{update_id}"),
+        ("GET", "/profile"),
+        ("PUT", "/profile"),
+        ("POST", "/job-ads/analyse"),
     ],
 )
 async def test_every_application_route_requires_the_api_key(anonymous_client, method, path):
@@ -450,3 +456,54 @@ async def test_deleting_an_unknown_status_update_is_404(client):
     response = await client.delete(f"/applications/{application_id}/status-updates/{uuid.uuid4()}")
 
     assert response.status_code == 404
+
+
+async def test_create_stores_the_ai_fields(client):
+    application_id = await create(
+        client,
+        job_ad="Full Stack Software Engineer. Remote, Sweden.",
+        match_rating=3.5,
+        match_summary="Strong stack overlap, no fintech background.",
+    )
+
+    detail = (await client.get(f"/applications/{application_id}")).json()
+    assert detail["job_ad"] == "Full Stack Software Engineer. Remote, Sweden."
+    assert detail["match_rating"] == 3.5
+    assert detail["match_summary"] == "Strong stack overlap, no fintech background."
+
+
+async def test_an_application_created_by_hand_has_no_match(client):
+    application_id = await create(client)
+
+    detail = (await client.get(f"/applications/{application_id}")).json()
+    assert detail["job_ad"] is None
+    assert detail["match_rating"] is None
+    assert detail["match_summary"] is None
+
+
+async def test_patch_cannot_touch_the_ai_fields(client):
+    application_id = await create(client, match_rating=3.5, match_summary="Original.")
+
+    response = await client.patch(
+        f"/applications/{application_id}",
+        json={"title": "Renamed", "match_rating": 5, "match_summary": "Talked up."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Renamed"
+    assert response.json()["match_rating"] == 3.5
+    assert response.json()["match_summary"] == "Original."
+
+
+async def test_the_list_carries_the_match_rating(client):
+    await create(client, match_rating=4.0)
+
+    row = (await client.get("/applications")).json()[0]
+
+    assert row["match_rating"] == 4.0
+
+
+async def test_create_rejects_a_match_rating_off_the_step(client):
+    response = await client.post("/applications", json=payload(match_rating=3.7))
+
+    assert response.status_code == 422

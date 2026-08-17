@@ -69,6 +69,7 @@ def list_applications(session: SessionDep, include_closed: bool = False):
             sector=application.sector,
             location=application.location,
             rating=application.rating,
+            match_rating=application.match_rating,
             current_status=current_status,
             last_update_date=last_update_date,
         )
