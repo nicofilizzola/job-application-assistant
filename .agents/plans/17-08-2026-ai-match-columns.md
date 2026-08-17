@@ -911,7 +911,7 @@ worth keeping, so the same panel renders under the AI mode box.
 - Produces: `POST /applications` bodies carrying `match_strengths` and `match_weaknesses` as
   `string[] | null`, read off the form by `readAiFields`.
 
-- [ ] **Step 1: Write the failing assertions**
+- [x] **Step 1: Write the failing assertions**
 
 In `frontend/e2e/ai-mode.spec.ts`, in `test("AI mode fills the form from a pasted advert")`, the
 existing block that asserts the form was filled becomes:
@@ -940,7 +940,7 @@ existing block that asserts the form was filled becomes:
   await expect(preview.getByText("Stubbed weakness")).toBeVisible();
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 ```bash
 cd frontend && npx playwright test ai-mode -g "fills the form"
@@ -949,7 +949,7 @@ cd frontend && npx playwright test ai-mode -g "fills the form"
 Expected: FAIL on `preview.getByText("3.5 / 5")` - the create form renders no panel yet. The
 `toBeHidden()` assertion before the toggle passes already, for the same reason.
 
-- [ ] **Step 3: Render the preview on the form**
+- [x] **Step 3: Render the preview on the form**
 
 In `frontend/src/components/application-form.tsx`, add to the imports:
 
@@ -973,7 +973,7 @@ Then, immediately after the `{creating && <JobAdAnalyser onAnalysed={applyAnalys
 It sits outside the `<form key={prefillKey}>`, so remounting the inputs on a fresh analysis does not
 depend on it, and it disappears again if the next analysis comes back unscored.
 
-- [ ] **Step 4: Carry both lists through the form**
+- [x] **Step 4: Carry both lists through the form**
 
 Still in `frontend/src/components/application-form.tsx`, the hidden-input block becomes:
 
@@ -994,7 +994,7 @@ Still in `frontend/src/components/application-form.tsx`, the hidden-input block 
         )}
 ```
 
-- [ ] **Step 5: Read the lists in the Server Action**
+- [x] **Step 5: Read the lists in the Server Action**
 
 In `frontend/src/app/applications/actions.ts`, add this helper directly below `optional`:
 
@@ -1030,7 +1030,7 @@ There is no Zod schema for these and there should not be: they are not user inpu
 `applicationSchema`, and the API is the authority on them. That matches how `job_ad` and
 `match_rating` are already handled.
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 ```bash
 cd frontend && npx playwright test
@@ -1039,7 +1039,7 @@ cd frontend && npx playwright test
 Expected: the whole end-to-end suite passes, not just `ai-mode`. Run it all here because the create
 form is shared with the edit screen, which `applications.spec.ts` drives.
 
-- [ ] **Step 7: Check types and lint**
+- [x] **Step 7: Check types and lint**
 
 ```bash
 cd frontend && npx tsc --noEmit && npm run lint && npm test
@@ -1047,7 +1047,7 @@ cd frontend && npx tsc --noEmit && npm run lint && npm test
 
 Expected: all PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/components/application-form.tsx frontend/src/app/applications/actions.ts \
