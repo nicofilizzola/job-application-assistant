@@ -301,6 +301,66 @@
         }
       }
     },
+    "/applications/{application_id}/match": {
+      "post": {
+        "tags": [
+          "applications"
+        ],
+        "summary": "Score Match",
+        "description": "Re-scores a stored advert against the current profile, which is the point of storing it.",
+        "operationId": "score_match_applications__application_id__match_post",
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Application Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/applications/{application_id}/status-updates": {
       "post": {
         "tags": [
@@ -509,6 +569,172 @@
         }
       }
     },
+    "/job-ads/analyse": {
+      "post": {
+        "tags": [
+          "job-ads"
+        ],
+        "summary": "Analyse Job Ad",
+        "description": "Reads an advert. Stores nothing - the result is prefill, and the user has not agreed to it.",
+        "operationId": "analyse_job_ad_job_ads_analyse_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobAdText"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAnalysis"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Read Profile",
+        "operationId": "read_profile_profile_get",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Replace Profile",
+        "operationId": "replace_profile_profile_put",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -589,6 +815,41 @@
           },
           "first_update": {
             "$ref": "#/components/schemas/StatusUpdateCreate"
+          },
+          "job_ad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Ad"
+          },
+          "match_rating": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Rating"
+          },
+          "match_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Summary"
           }
         },
         "type": "object",
@@ -657,6 +918,39 @@
             ],
             "title": "Link"
           },
+          "job_ad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Ad"
+          },
+          "match_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Rating"
+          },
+          "match_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Summary"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -693,6 +987,9 @@
           "rating",
           "comment",
           "link",
+          "job_ad",
+          "match_rating",
+          "match_summary",
           "created_at",
           "updated_at",
           "current_status",
@@ -735,6 +1032,17 @@
             ],
             "title": "Rating"
           },
+          "match_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Rating"
+          },
           "current_status": {
             "$ref": "#/components/schemas/Status"
           },
@@ -752,6 +1060,7 @@
           "sector",
           "location",
           "rating",
+          "match_rating",
           "current_status",
           "last_update_date"
         ],
@@ -854,6 +1163,112 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "JobAdText": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "JobAdText"
+      },
+      "JobAnalysis": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "company": {
+            "type": "string",
+            "title": "Company"
+          },
+          "sector": {
+            "type": "string",
+            "title": "Sector"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "match_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Rating"
+          },
+          "match_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "company",
+          "sector",
+          "location",
+          "match_rating",
+          "match_summary"
+        ],
+        "title": "JobAnalysis",
+        "description": "What one model call returns. Also the response body of POST /job-ads/analyse.\n\nThe match fields are null when there is no profile to score against. No defaults: OpenAI's\nstrict structured outputs require every property to be required, and nullability is how\n\"absent\" is expressed."
+      },
+      "ProfileRead": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "updated_at"
+        ],
+        "title": "ProfileRead"
+      },
+      "ProfileWrite": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ProfileWrite"
       },
       "Status": {
         "type": "string",
