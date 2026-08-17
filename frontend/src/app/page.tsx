@@ -46,7 +46,15 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/">)
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
-                    <span title="Rating">{formatRating(application.rating)}</span>
+                    <span title="Your rating">{formatRating(application.rating)}</span>
+                    {application.match_rating != null && (
+                      <span
+                        title="AI match"
+                        className="rounded border px-1.5 py-0.5 text-xs tabular-nums"
+                      >
+                        AI {application.match_rating}
+                      </span>
+                    )}
                     <StatusBadge status={application.current_status} />
                     <time dateTime={application.last_update_date} className="tabular-nums">
                       {formatDate(application.last_update_date)}

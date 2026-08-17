@@ -41,6 +41,26 @@ export interface paths {
         patch: operations["update_application_applications__application_id__patch"];
         trace?: never;
     };
+    "/applications/{application_id}/match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Score Match
+         * @description Re-scores a stored advert against the current profile, which is the point of storing it.
+         */
+        post: operations["score_match_applications__application_id__match_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{application_id}/status-updates": {
         parameters: {
             query?: never;
@@ -74,6 +94,44 @@ export interface paths {
         head?: never;
         /** Update Status Update */
         patch: operations["update_status_update_applications__application_id__status_updates__update_id__patch"];
+        trace?: never;
+    };
+    "/job-ads/analyse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyse Job Ad
+         * @description Reads an advert. Stores nothing - the result is prefill, and the user has not agreed to it.
+         */
+        post: operations["analyse_job_ad_job_ads_analyse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Profile */
+        get: operations["read_profile_profile_get"];
+        /** Replace Profile */
+        put: operations["replace_profile_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/health": {
@@ -114,6 +172,12 @@ export interface components {
             /** Link */
             link?: string | null;
             first_update: components["schemas"]["StatusUpdateCreate"];
+            /** Job Ad */
+            job_ad?: string | null;
+            /** Match Rating */
+            match_rating?: number | null;
+            /** Match Summary */
+            match_summary?: string | null;
         };
         /** ApplicationDetail */
         ApplicationDetail: {
@@ -136,6 +200,12 @@ export interface components {
             comment: string | null;
             /** Link */
             link: string | null;
+            /** Job Ad */
+            job_ad: string | null;
+            /** Match Rating */
+            match_rating: number | null;
+            /** Match Summary */
+            match_summary: string | null;
             /**
              * Created At
              * Format: date-time
@@ -172,6 +242,8 @@ export interface components {
             location: string;
             /** Rating */
             rating: number | null;
+            /** Match Rating */
+            match_rating: number | null;
             current_status: components["schemas"]["Status"];
             /**
              * Last Update Date
@@ -200,6 +272,45 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** JobAdText */
+        JobAdText: {
+            /** Text */
+            text: string;
+        };
+        /**
+         * JobAnalysis
+         * @description What one model call returns. Also the response body of POST /job-ads/analyse.
+         *
+         *     The match fields are null when there is no profile to score against. No defaults: OpenAI's
+         *     strict structured outputs require every property to be required, and nullability is how
+         *     "absent" is expressed.
+         */
+        JobAnalysis: {
+            /** Title */
+            title: string;
+            /** Company */
+            company: string;
+            /** Sector */
+            sector: string;
+            /** Location */
+            location: string;
+            /** Match Rating */
+            match_rating: number | null;
+            /** Match Summary */
+            match_summary: string | null;
+        };
+        /** ProfileRead */
+        ProfileRead: {
+            /** Content */
+            content: string;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** ProfileWrite */
+        ProfileWrite: {
+            /** Content */
+            content: string;
         };
         /**
          * Status
@@ -437,6 +548,39 @@ export interface operations {
             };
         };
     };
+    score_match_applications__application_id__match_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_status_update_applications__application_id__status_updates_post: {
         parameters: {
             query?: never;
@@ -531,6 +675,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyse_job_ad_job_ads_analyse_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobAdText"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAnalysis"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_profile_profile_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_profile_profile_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
                 };
             };
             /** @description Validation Error */

@@ -8,10 +8,12 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.ai import get_analyser
 from app.config import settings
 from app.db import get_session
 from app.main import app
 from app.models import Application, StatusUpdate
+from app.schemas import JobAnalysis
 
 load_dotenv()
 
@@ -34,7 +36,7 @@ def override_get_session() -> Iterator[Session]:
 @pytest.fixture(autouse=True)
 def clean_database() -> None:
     with test_engine.begin() as connection:
-        connection.execute(text("truncate applications cascade"))
+        connection.execute(text("truncate applications, profile cascade"))
 
 
 @pytest.fixture
@@ -84,6 +86,33 @@ def seed():
             return str(application.id)
 
     return _seed
+
+
+@pytest.fixture
+def stub_analyser():
+    """Swaps the OpenAI call for a recorder, so tests can assert what the model was handed."""
+
+    calls: list[tuple[str, str]] = []
+
+    def _install(**fields) -> list[tuple[str, str]]:
+        answer = JobAnalysis(
+            title=fields.get("title", "Full stack engineer"),
+            company=fields.get("company", "BJAK"),
+            sector=fields.get("sector", "Insurtech"),
+            location=fields.get("location", "Sweden"),
+            match_rating=fields.get("match_rating", 3.5),
+            match_summary=fields.get("match_summary", "Three sentences would go here."),
+        )
+
+        def analyser(ad_text: str, profile: str) -> JobAnalysis:
+            calls.append((ad_text, profile))
+            return answer
+
+        app.dependency_overrides[get_analyser] = lambda: analyser
+        return calls
+
+    yield _install
+    app.dependency_overrides.pop(get_analyser, None)
 
 
 @pytest.fixture

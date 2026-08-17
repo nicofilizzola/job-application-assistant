@@ -16,3 +16,13 @@ export function formatDate(isoDate: string): string {
 export function formatRating(rating: number | null | undefined): string {
   return rating == null ? "-" : String(rating);
 }
+
+/**
+ * A date input wants YYYY-MM-DD in the reader's own day. `toISOString` gives UTC's, which is the
+ * previous day for anyone east of the line late in the evening.
+ */
+export function todayIso(): string {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}

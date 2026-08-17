@@ -11,6 +11,9 @@ export function AppHeader() {
         <Link href="/" className="mr-auto font-semibold tracking-tight">
           Job applications
         </Link>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/profile">Profile</Link>
+        </Button>
         <ThemeToggle />
         <form action={logout}>
           <Button type="submit" variant="ghost" size="sm">

@@ -9,6 +9,8 @@ export type ApplicationPatch = components["schemas"]["ApplicationPatch"];
 export type StatusUpdateCreate = components["schemas"]["StatusUpdateCreate"];
 export type StatusUpdatePatch = components["schemas"]["StatusUpdatePatch"];
 export type StatusUpdateRead = components["schemas"]["StatusUpdateRead"];
+export type JobAnalysis = components["schemas"]["JobAnalysis"];
+export type Profile = components["schemas"]["ProfileRead"];
 
 export class ApiError extends Error {
   constructor(
@@ -88,4 +90,20 @@ export function deleteStatusUpdate(applicationId: string, updateId: string) {
   return call<void>(`/applications/${applicationId}/status-updates/${updateId}`, {
     method: "DELETE",
   });
+}
+
+export function getProfile() {
+  return call<Profile>("/profile");
+}
+
+export function putProfile(content: string) {
+  return call<Profile>("/profile", { method: "PUT", body: JSON.stringify({ content }) });
+}
+
+export function analyseJobAd(text: string) {
+  return call<JobAnalysis>("/job-ads/analyse", { method: "POST", body: JSON.stringify({ text }) });
+}
+
+export function scoreMatch(id: string) {
+  return call<ApplicationDetail>(`/applications/${id}/match`, { method: "POST" });
 }

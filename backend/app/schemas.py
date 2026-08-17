@@ -27,6 +27,37 @@ def _on_a_half_step(value: float) -> float:
 Rating = Annotated[float, Field(ge=1, le=5), AfterValidator(_on_a_half_step)]
 
 
+class JobAdText(BaseModel):
+    text: str = Field(min_length=1)
+
+
+class JobAnalysis(BaseModel):
+    """What one model call returns. Also the response body of POST /job-ads/analyse.
+
+    The match fields are null when there is no profile to score against. No defaults: OpenAI's
+    strict structured outputs require every property to be required, and nullability is how
+    "absent" is expressed.
+    """
+
+    title: str
+    company: str
+    sector: str
+    location: str
+    match_rating: float | None
+    match_summary: str | None
+
+
+class ProfileWrite(BaseModel):
+    content: str
+
+
+class ProfileRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    content: str
+    updated_at: datetime.datetime | None
+
+
 class StatusUpdateCreate(BaseModel):
     date: datetime.date
     status: Status
@@ -69,6 +100,11 @@ class ApplicationFields(BaseModel):
 
 class ApplicationCreate(ApplicationFields):
     first_update: StatusUpdateCreate
+    # Written once, by AI mode. There is no matching field on ApplicationPatch, so a later hand
+    # edit cannot rewrite a score the model gave.
+    job_ad: str | None = None
+    match_rating: Rating | None = None
+    match_summary: str | None = None
 
 
 class ApplicationPatch(BaseModel):
@@ -98,6 +134,7 @@ class ApplicationListItem(BaseModel):
     sector: str
     location: str
     rating: float | None
+    match_rating: float | None
     current_status: Status
     last_update_date: datetime.date
 
@@ -113,6 +150,9 @@ class ApplicationDetail(BaseModel):
     rating: float | None
     comment: str | None
     link: str | None
+    job_ad: str | None
+    match_rating: float | None
+    match_summary: str | None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     current_status: Status
