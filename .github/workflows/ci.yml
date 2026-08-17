@@ -40,7 +40,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v10
+      # Pinned to a full version: astral-sh/setup-uv publishes no floating major tag, so `@v10`
+      # does not resolve.
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
 
@@ -83,6 +85,12 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # PageProps and LayoutProps are globals Next generates into .next/types/routes.d.ts, which is
+      # gitignored - so tsc passes locally off an old build and fails on a fresh checkout. typegen
+      # writes them without paying for a full build.
+      - name: Generate route types
+        run: npx next typegen
 
       - name: Check types
         run: npx tsc --noEmit
