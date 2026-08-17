@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
+from app.ai import AnalyserDep
 from app.db import get_session
 from app.models import Application, StatusUpdate
+from app.routers.profile import load_content
 from app.schemas import (
     CLOSED_STATUSES,
     ApplicationCreate,
@@ -104,6 +106,26 @@ def update_application(application_id: uuid.UUID, payload: ApplicationPatch, ses
 def delete_application(application_id: uuid.UUID, session: SessionDep):
     session.delete(_load(session, application_id))
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{application_id}/match", response_model=ApplicationDetail)
+def score_match(application_id: uuid.UUID, session: SessionDep, analyser: AnalyserDep):
+    """Re-scores a stored advert against the current profile, which is the point of storing it."""
+    application = _load(session, application_id)
+    if not application.job_ad:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This application has no stored job advert to score"
+        )
+    profile = load_content(session)
+    # Scoring with no profile returns nulls, and writing those would erase a good score.
+    if not profile.strip():
+        raise HTTPException(status.HTTP_409_CONFLICT, "The candidate profile is empty")
+
+    analysis = analyser(application.job_ad, profile)
+    application.match_rating = analysis.match_rating
+    application.match_summary = analysis.match_summary
+    session.flush()
+    return application
 
 
 @router.post(
