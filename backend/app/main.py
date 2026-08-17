@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 
-from app.routers import applications, profile
+from app.routers import applications, job_ads, profile
 
 app = FastAPI(title="Job Application Assistant")
 app.include_router(applications.router)
+app.include_router(job_ads.router)
 app.include_router(profile.router)
 
 
