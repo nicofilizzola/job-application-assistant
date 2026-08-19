@@ -1508,7 +1508,7 @@ the code.
 - [x] `git status` shows no unexpected files staged, and the pre-existing dirty paths
       (`.gitignore`, `skills-lock.json`, `.agents/skills/caveman/`, `.agents/skills/writing-plans/`,
       `.claude/skills/caveman/`, `.claude/skills/writing-plans/`) are still untouched
-- [ ] **A manual check against the real model**, both services running with `AI_STUB` unset and a
+- [x] **A manual check against the real model**, both services running with `AI_STUB` unset and a
       real profile in place. This is the only step that exercises the approved prompt - everything
       above it runs against the stub. Ask for two updates in a row, one that belongs in a section
       that exists ("I finished the AWS Solutions Architect course") and one that fits nowhere well
@@ -1521,6 +1521,34 @@ the code.
       Write the answers into this section. A non-zero removed count on a plain addition is the
       signal that rule 1 needs strengthening, and it is the reason the count is on screen at all. A
       supersession is the one case where the count is allowed to move.
+
+      Run on 19 August 2026 against `gpt-5.5`, `AI_STUB` unset. Three instructions, each starting
+      from the same four-section profile, called through `POST /profile/enrich` rather than the
+      browser - the endpoint takes the profile in its body, so this exercises the route's own code
+      path without touching the stored row. Diffs computed with the shipped `diffProfile`.
+
+      | Case | Placement | added | removed |
+      | ---- | --------- | ----- | ------- |
+      | "finished the AWS Solutions Architect Associate course" | under the existing `## Certifications` | 10 | 0 |
+      | "I now mentor two junior engineers" | under `## Experience`, after the contract-work line | 4 | 0 |
+      | "I left Acme Insurance in July 2026" | the one Acme line, `since 2023` -> `from 2023 to July 2026` | 4 | 1 |
+
+      - **Removed count stayed at 0 for both plain additions.** Rule 1 holds where it should.
+      - **No new section was invented.** The instruction with nowhere to go picked `## Experience`,
+        which is the sensible host, so rule 2's ban costs nothing here.
+      - **Register matched.** Both additions dropped the instruction's "I" to match the profile's
+        fragments: "Mentor two junior engineers", not "I now mentor two junior engineers".
+      - **Nothing was invented.** The AWS line gained no implied skills, and the supersession added
+        no editorial ("currently seeking" and the like).
+      - **The supersession used the exception exactly as intended**, rewriting one line and no other.
+        `removedWords` moved to 1 for the word `since`, so the panel shows the warning and strikes
+        that word through - the designed behaviour, and the reason a human reviews before saving.
+
+      One blemish, not a defect in the code: the AWS line landed **below** the existing `None yet.`
+      under `## Certifications`, so that section now reads "None yet." followed by a certification.
+      Rule 1's exception would have permitted replacing that line, since the update makes it false,
+      and the model did not reach for it. The draft is editable precisely for this, and the diff puts
+      it on screen. If it grates, the fix is one clause in rule 1 naming a line the update falsifies.
 
 ## Deliberately not in this plan
 
