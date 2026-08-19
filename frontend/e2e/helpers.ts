@@ -32,6 +32,16 @@ export async function signIn(page: Page): Promise<void> {
   await expect(page.getByRole("link", { name: "New application" })).toBeVisible();
 }
 
+export async function saveProfile(page: Page, content: string) {
+  await page.goto("/profile");
+  await page.getByLabel("Candidate profile").fill(content);
+  await page.getByRole("button", { name: "Save profile" }).click();
+  // exact, because getByText matches a substring case-insensitively and the screen's own
+  // description ends "before anything is saved.". Without it this waits for nothing and the caller
+  // races the write.
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+}
+
 export async function createApplication(
   page: Page,
   fields: {

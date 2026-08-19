@@ -1,17 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { STORAGE_STATE } from "./helpers";
+import { saveProfile, STORAGE_STATE } from "./helpers";
 
 test.use({ storageState: STORAGE_STATE });
 
 const ADVERT = "Full Stack Software Engineer - AI Finance Agent. Remote, Sweden. 3+ years.";
-
-async function saveProfile(page: Page, content: string) {
-  await page.goto("/profile");
-  await page.getByLabel("Candidate profile").fill(content);
-  await page.getByRole("button", { name: "Save profile" }).click();
-  await expect(page.getByText("Saved.")).toBeVisible();
-}
 
 /** Returns the detail URL. Waiting for the heading first: the click redirects, and reading
  *  page.url() before that lands gives the form's URL, not the new application's. */
