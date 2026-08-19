@@ -264,7 +264,7 @@ EOF
   - Pydantic models `ProfileEnrich` and `ProfileDraft`, which become the TypeScript types Task 4
     imports.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to the end of `backend/tests/test_profile.py`:
 
@@ -381,7 +381,7 @@ and one line to the parametrize list in `test_every_application_route_requires_t
         ("POST", "/profile/enrich"),
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd backend && uv run pytest tests/test_profile.py tests/test_ai.py -q
@@ -390,7 +390,7 @@ cd backend && uv run pytest tests/test_profile.py tests/test_ai.py -q
 Expected: the five profile tests fail with 404 (the route does not exist), the two `test_ai.py` tests
 fail at import with `ImportError: cannot import name 'stub_enrich'`.
 
-- [ ] **Step 3: Add the two schemas**
+- [x] **Step 3: Add the two schemas**
 
 In `backend/app/schemas.py`, directly after the existing `ProfileRead` class:
 
@@ -408,7 +408,7 @@ class ProfileDraft(BaseModel):
     content: str
 ```
 
-- [ ] **Step 4: Add the prompt, the call, the stub and the dependency**
+- [x] **Step 4: Add the prompt, the call, the stub and the dependency**
 
 Append to `backend/app/ai.py`, after `AnalyserDep`. The text below is the one **approved at the
 Task 1 gate**; copy it verbatim, including rule 1's exception and rule 2's outright ban on new
@@ -489,7 +489,7 @@ def get_enricher() -> Enricher:
 EnricherDep = Annotated[Enricher, Depends(get_enricher)]
 ```
 
-- [ ] **Step 5: Add the route**
+- [x] **Step 5: Add the route**
 
 In `backend/app/routers/profile.py`, extend the imports and append the route:
 
@@ -509,7 +509,7 @@ def enrich_profile(payload: ProfileEnrich, enricher: EnricherDep):
 There is no `SessionDep` here on purpose. The endpoint touches no database state, and adding one
 would invite a future reader to read the stored profile instead of the one on screen.
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 ```bash
 cd backend && uv run pytest -q && uv run ruff format . && uv run ruff check .
@@ -518,7 +518,7 @@ cd backend && uv run pytest -q && uv run ruff format . && uv run ruff check .
 Expected: 100 passed, up from the 92 in the baseline - five profile tests, two stub tests, and one
 more case in the parametrized auth test. `ruff` clean.
 
-- [ ] **Step 7: Regenerate the committed API schema**
+- [x] **Step 7: Regenerate the committed API schema**
 
 ```bash
 cd backend && uv run python -m scripts.export_openapi
@@ -528,7 +528,7 @@ git diff --stat backend/openapi.json
 Expected: `openapi.json` gains the `/profile/enrich` path and the `ProfileEnrich` and `ProfileDraft`
 component schemas. If it is unchanged, the route was not mounted - check the prefix.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/app backend/tests backend/openapi.json
