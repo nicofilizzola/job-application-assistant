@@ -575,7 +575,7 @@ EOF
 
   Task 4's `ProfileDiffView` renders `pieces` and reads both counts.
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 ```bash
 cd frontend && npm install diff
@@ -584,7 +584,7 @@ cd frontend && npm install diff
 `diff` v9 ships its own TypeScript types. Do **not** install `@types/diff` - it is a deprecated stub
 and npm will say so.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `frontend/src/lib/profile-diff.test.ts`:
 
@@ -688,7 +688,7 @@ describe("diffProfile", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 ```bash
 cd frontend && npm test -- profile-diff
@@ -696,7 +696,7 @@ cd frontend && npm test -- profile-diff
 
 Expected: the whole file fails to resolve `@/lib/profile-diff`.
 
-- [ ] **Step 4: Write the helper**
+- [x] **Step 4: Write the helper**
 
 Create `frontend/src/lib/profile-diff.ts`:
 
@@ -769,7 +769,7 @@ export function diffProfile(before: string, after: string): ProfileDiff {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 cd frontend && npm test && npx tsc --noEmit && npm run lint
@@ -781,7 +781,7 @@ If a reassembly case fails by exactly one trailing newline, `diffLines` is ignor
 end of file. Pass `{ ignoreNewlineAtEof: false }` as its third argument and rerun; do not "fix" the
 test, the invariant is the point.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/package.json frontend/package-lock.json frontend/src/lib/profile-diff.ts frontend/src/lib/profile-diff.test.ts
