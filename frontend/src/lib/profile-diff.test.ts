@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { diffProfile, type Piece, type ProfileDiff } from "@/lib/profile-diff";
+import { diffProfile, normaliseNewlines, type Piece, type ProfileDiff } from "@/lib/profile-diff";
 
 const PROFILE = "## Skills\nPython, FastAPI, Postgres\n\n## Experience\nSix years full stack";
 const WITH_SECTION = `${PROFILE}\n\n## Certifications\nAWS Solutions Architect Associate`;
@@ -22,6 +22,19 @@ describe("diffProfile", () => {
     expect(diff.addedWords).toBe(0);
     expect(diff.removedWords).toBe(0);
     expect(joined(diff, "same")).toBe(PROFILE);
+  });
+
+  // A saved profile arrives CRLF because that is how a form serialises a textarea, while the draft
+  // in the box reads back LF. Without normalising, every line break alone shows as removed and
+  // re-added.
+  it("shows no change between a CRLF profile and its normalised draft", () => {
+    const stored = PROFILE.replace(/\n/g, "\r\n");
+
+    const diff = diffProfile(normaliseNewlines(stored), PROFILE);
+
+    expect(diff.addedWords).toBe(0);
+    expect(diff.removedWords).toBe(0);
+    expect(diff.pieces.every((piece) => piece.kind === "same")).toBe(true);
   });
 
   it("marks a whole new section as added", () => {

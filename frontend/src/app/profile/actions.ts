@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { enrichProfile, putProfile } from "@/lib/api";
+import { normaliseNewlines } from "@/lib/profile-diff";
 
 export type ProfileState = { saved?: boolean };
 
@@ -10,7 +11,7 @@ export async function saveProfileAction(
   _previous: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
-  await putProfile(String(formData.get("content") ?? ""));
+  await putProfile(normaliseNewlines(String(formData.get("content") ?? "")));
   revalidatePath("/", "layout");
   return { saved: true };
 }

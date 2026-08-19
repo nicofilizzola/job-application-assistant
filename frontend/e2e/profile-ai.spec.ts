@@ -61,15 +61,11 @@ test("hand-editing the draft re-diffs it and warns about what was dropped", asyn
     .getByLabel("Candidate profile")
     .fill(`## Skills\n\n## Experience\nSix years full stack\n${ADDED}`);
 
-  // Filtered rather than asserted on the bare element: a profile saved through the form comes back
-  // with CRLF line endings while the box reports LF, so the diff marks every line break too and
-  // there is more than one del and more than one ins.
   const changes = page.getByRole("region", { name: "Changes" });
-  const dropped = changes.locator("del").filter({ hasText: "Python, FastAPI, Postgres" });
-  await expect(dropped).toBeVisible();
+  await expect(changes.locator("del")).toContainText("Python, FastAPI, Postgres");
   await expect(changes.getByText("A rewrite is meant to add only")).toBeVisible();
   // The addition is still shown as an addition.
-  await expect(changes.locator("ins").filter({ hasText: ADDED })).toBeVisible();
+  await expect(changes.locator("ins")).toContainText(ADDED);
 });
 
 test("Discard puts the saved profile back", async ({ page }) => {

@@ -1,6 +1,7 @@
 import { ProfileForm } from "@/app/profile/profile-form";
 import { AppHeader } from "@/components/app-header";
 import { getProfile } from "@/lib/api";
+import { normaliseNewlines } from "@/lib/profile-diff";
 
 export const metadata = { title: "Profile" };
 
@@ -17,7 +18,7 @@ export default async function ProfilePage() {
           says about what you have actually built, the more the score is worth. AI mode folds an
           update into it for you, additively, and shows you what changed before anything is saved.
         </p>
-        <ProfileForm content={profile.content} />
+        <ProfileForm content={normaliseNewlines(profile.content)} />
       </main>
     </>
   );

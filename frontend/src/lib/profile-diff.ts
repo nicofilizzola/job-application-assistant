@@ -64,3 +64,12 @@ export function diffProfile(before: string, after: string): ProfileDiff {
 
   return { pieces, addedWords, removedWords };
 }
+
+/**
+ * Form submission serialises a textarea as CRLF, while the same textarea's DOM value reads back
+ * LF-normalised. Left alone, that difference alone makes the diff mark every line break as removed
+ * and re-added the moment the draft is hand-edited, so both sides are normalised to LF.
+ */
+export function normaliseNewlines(text: string): string {
+  return text.replace(/\r\n/g, "\n");
+}
