@@ -829,7 +829,7 @@ EOF
     `What to add` (instruction textarea), `Candidate profile` (the profile textarea, unchanged),
     and the buttons `Rewrite profile`, `Save profile` (unchanged) and `Discard`.
 
-- [ ] **Step 1: Regenerate the generated types**
+- [x] **Step 1: Regenerate the generated types**
 
 ```bash
 cd frontend && npm run gen:types
@@ -839,7 +839,7 @@ git diff --stat src/lib/api-types.ts
 Expected: `ProfileDraft` and `ProfileEnrich` appear in `components["schemas"]`. If not, Task 2's
 `openapi.json` was not committed - go back and regenerate it.
 
-- [ ] **Step 2: Add the API call**
+- [x] **Step 2: Add the API call**
 
 In `frontend/src/lib/api.ts`, after the existing `Profile` type:
 
@@ -858,7 +858,7 @@ export function enrichProfile(content: string, instruction: string) {
 }
 ```
 
-- [ ] **Step 3: Add the Server Action**
+- [x] **Step 3: Add the Server Action**
 
 Replace `frontend/src/app/profile/actions.ts` with:
 
@@ -899,7 +899,7 @@ export async function enrichProfileAction(
 }
 ```
 
-- [ ] **Step 4: Write the diff panel**
+- [x] **Step 4: Write the diff panel**
 
 Create `frontend/src/components/profile-diff-view.tsx`:
 
@@ -953,7 +953,7 @@ export function ProfileDiffView({ diff }: { diff: ProfileDiff }) {
 }
 ```
 
-- [ ] **Step 5: Rewrite the form**
+- [x] **Step 5: Rewrite the form**
 
 Replace `frontend/src/app/profile/profile-form.tsx` with:
 
@@ -1100,7 +1100,7 @@ export function ProfileForm({ content }: { content: string }) {
 }
 ```
 
-- [ ] **Step 6: Update the screen's description**
+- [x] **Step 6: Update the screen's description**
 
 In `frontend/src/app/profile/page.tsx`, replace the paragraph under the heading:
 
@@ -1112,7 +1112,7 @@ In `frontend/src/app/profile/page.tsx`, replace the paragraph under the heading:
         </p>
 ```
 
-- [ ] **Step 7: Check it compiles and the suites still pass**
+- [x] **Step 7: Check it compiles and the suites still pass**
 
 ```bash
 cd frontend && npx tsc --noEmit && npm run lint && npm test
@@ -1143,7 +1143,7 @@ At `http://localhost:3000/profile`, confirm each of these:
 - `Save profile` writes the draft, shows `Saved.`, and the panel closes. Reload confirms it.
 - Toggle the theme. The added and removed backgrounds are legible in both.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add frontend/src/lib/api.ts frontend/src/lib/api-types.ts frontend/src/app/profile frontend/src/components/profile-diff-view.tsx
