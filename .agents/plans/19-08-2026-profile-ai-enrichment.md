@@ -1486,6 +1486,17 @@ design.
    `d5876da`, which also restored the two end-to-end assertions to requiring exactly one
    struck-through and one added element - the strict form is what exposed the corruption.
 
+### Not a defect: the suite flakes when the machine is short of memory
+
+Three consecutive runs failed 3, 5 and 7 tests, never the same set twice, and every failure was an
+expectation waiting for a Server Action to land rather than one comparing wrong content. Free memory
+was 1.6 GB of 13.7 GB, and `git diff` confirmed that not one code, test or config file had changed
+since a clean 24-pass run. `npx playwright test --retries=2` is the discriminator - a timing flake
+passes on retry, a real defect fails all three attempts - and the next run passed 24 of 24 on first
+attempt with no retry consumed. Two suites sharing the Neon `test` branch produce the same shape,
+which `AGENTS.md` already warns about. Check for a second run and for free memory before suspecting
+the code.
+
 ## Done when
 
 - [x] Task 1's prompt was approved by a human, and the approved text is in this document
@@ -1494,7 +1505,7 @@ design.
 - [x] `cd frontend && npx tsc --noEmit && npm run lint && npm test` - clean, Vitest at 31
 - [x] `cd frontend && npx playwright test` - 24 pass
 - [x] No migration was written, and `git status` shows none: nothing new is stored
-- [ ] `git status` shows no unexpected files staged, and the pre-existing dirty paths
+- [x] `git status` shows no unexpected files staged, and the pre-existing dirty paths
       (`.gitignore`, `skills-lock.json`, `.agents/skills/caveman/`, `.agents/skills/writing-plans/`,
       `.claude/skills/caveman/`, `.claude/skills/writing-plans/`) are still untouched
 - [ ] **A manual check against the real model**, both services running with `AI_STUB` unset and a
