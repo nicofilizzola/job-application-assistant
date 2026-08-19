@@ -1184,7 +1184,7 @@ EOF
   needed here.
 - Produces: `saveProfile(page, content)` exported from `e2e/helpers.ts`.
 
-- [ ] **Step 1: Move `saveProfile` into the shared helpers**
+- [x] **Step 1: Move `saveProfile` into the shared helpers**
 
 Cut the local `saveProfile` out of `frontend/e2e/ai-mode.spec.ts` and add it to
 `frontend/e2e/helpers.ts`:
@@ -1207,7 +1207,7 @@ import { saveProfile, STORAGE_STATE } from "./helpers";
 `ai-mode.spec.ts` no longer needs its `type Page` import if nothing else in the file uses it -
 `npm run lint` will say so.
 
-- [ ] **Step 2: Write the failing spec**
+- [x] **Step 2: Write the failing spec**
 
 Create `frontend/e2e/profile-ai.spec.ts`:
 
@@ -1294,7 +1294,7 @@ test("Discard puts the saved profile back", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 3: Run the spec to verify it fails, then passes**
+- [x] **Step 3: Run the spec to verify it fails, then passes**
 
 ```bash
 cd frontend && npx playwright test profile-ai
@@ -1304,7 +1304,7 @@ If Task 4 is in place this passes first time; run it before Task 4's commit if y
 first. The one thing to watch is the `toHaveValue` assertion - it is exact, so a stub that appended
 a different string, or a `strip()` lost from `stub_enrich`, shows up here.
 
-- [ ] **Step 4: Run the whole end-to-end suite**
+- [x] **Step 4: Run the whole end-to-end suite**
 
 ```bash
 cd frontend && npx playwright test
@@ -1314,7 +1314,7 @@ Expected: 23 passed, up from the 19 in the baseline. The suite shares one databa
 row, and each test writes the profile it needs first, so order does not matter - but `workers: 1`
 and `fullyParallel: false` are what make that true. Do not "speed it up" by changing them.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/e2e
