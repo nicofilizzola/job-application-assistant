@@ -79,9 +79,10 @@ information the single spreadsheet value was compressing.
    before saving. Every field stays editable and nothing is written until the form is submitted.
 5. **Profile** - one textarea holding the candidate's background, reached from the header. AI mode
    scores adverts against it. Empty until written, which is a supported state, not an error.
-   A `Manual` / `AI mode` toggle sits above it: manual mode edits the text directly, AI mode locks
-   the textarea and takes a plain-English update instead ("I finished the AWS course"), then shows
-   the rewritten profile as a diff over the saved one. The draft stays editable while it is being
+   An `AI mode` switch sits above it, off by default, which is manual mode: the textarea is edited
+   directly, exactly as before. Switched on, it locks the textarea and takes a plain-English update
+   instead ("I finished the AWS course"), then shows the rewritten profile as a diff over the saved
+   one. The draft stays editable while it is being
    reviewed and the diff follows the edit, so a hand correction is shown in the same terms the
    rewrite was. Nothing is written until `Save profile`.
 
