@@ -23,8 +23,9 @@ Point `backend/.env` at the Neon `dev` branch, never `main`. `TEST_DATABASE_URL`
 branch: the suite truncates it between cases.
 
 `OPENAI_API_KEY` is needed for AI mode, which reads a pasted job advert and scores it against the
-profile written at `/profile`. The test suites never call OpenAI, but the backend builds its client
-at import, so the variable has to be set for anything to start.
+profile written at `/profile`, and folds plain-English updates into that profile. The test suites
+never call OpenAI, but the backend builds its client at import, so the variable has to be set for
+anything to start.
 
 ## Run
 

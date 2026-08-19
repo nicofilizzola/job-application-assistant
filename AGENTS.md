@@ -79,6 +79,11 @@ information the single spreadsheet value was compressing.
    before saving. Every field stays editable and nothing is written until the form is submitted.
 5. **Profile** - one textarea holding the candidate's background, reached from the header. AI mode
    scores adverts against it. Empty until written, which is a supported state, not an error.
+   A `Manual` / `AI mode` toggle sits above it: manual mode edits the text directly, AI mode locks
+   the textarea and takes a plain-English update instead ("I finished the AWS course"), then shows
+   the rewritten profile as a diff over the saved one. The draft stays editable while it is being
+   reviewed and the diff follows the edit, so a hand correction is shown in the same terms the
+   rewrite was. Nothing is written until `Save profile`.
 
 Delete is available from the detail screen and cascades to that application's updates.
 
@@ -197,10 +202,15 @@ the filter runs in SQL rather than dropping rows client-side.
 | `POST`   | `/job-ads/analyse`                             | Extract fields and score one pasted advert       |
 | `GET`    | `/profile`                                     | Read the candidate profile                       |
 | `PUT`    | `/profile`                                     | Replace the candidate profile                    |
+| `POST`   | `/profile/enrich`                              | Fold a plain-English update into a profile       |
 
 A status update is addressed through its application, so an update id under the wrong application is
 a `404` rather than a cross-record write. Deleting an application's only update is a `409`: the
 current status is derived from the timeline, so an empty one has nothing to derive from.
+
+`/profile/enrich` reads and writes no row. It is handed the text the editor currently holds, not the
+stored profile, so a second instruction builds on a draft nobody has saved yet, and a rewrite the
+user rejects leaves no trace.
 
 ### Types across the boundary
 
@@ -392,16 +402,23 @@ Nearly all the tricky logic now lives in Python, so nearly all the unit tests do
 - That re-scoring with an empty profile is refused rather than erasing the existing score
 - What the analyser is handed: the pasted advert and the stored profile, with the OpenAI call
   replaced by a recorder through a FastAPI dependency override
+- What the enricher is handed: the text from the request body and the instruction, with the same
+  recorder treatment. That the enrich call stores nothing, and that an empty profile is enriched
+  into a first version rather than refused
 
 **Vitest** - only where real logic exists on the frontend: status-to-colour mapping, date
-formatting. Render-only components do not need tests written to reach a coverage number. The suite
-runs in a timezone pinned in `vitest.config.mts`, west of UTC, so the date helpers are exercised
-where local and UTC actually differ. Do not set `TZ` inside a test: Node keeps the last zone it
-read, so the change leaks into every later test in the file and cannot be undone.
+formatting, and the profile diff. The diff's own test asserts an invariant rather than a rendering:
+dropping the removed pieces has to give the draft back exactly, and dropping the added ones the
+saved profile, since those pieces are the whole document the panel renders. Render-only components
+do not need tests written to reach a coverage number. The suite runs in a timezone pinned in
+`vitest.config.mts`, west of UTC, so the date helpers are exercised where local and UTC actually
+differ. Do not set `TZ` inside a test: Node keeps the last zone it read, so the change leaks into
+every later test in the file and cannot be undone.
 
 **Playwright** - login, create an application with its first status update, add a second update and
 see the current status change, correct and delete a timeline entry, `Hide closed` toggle behaviour,
-edit, delete, and AI mode with the analyser stubbed. Runs against both services, which means the
+edit, delete, and AI mode with the analyser stubbed, and the profile's AI mode - a rewrite reviewed
+as a diff, a hand edit re-diffing it, and Discard. Runs against both services, which means the
 suite starts two processes. The database is emptied once at the start and once at the end, not
 between tests, so an assertion that could match another test's record needs scoping to its own row.
 
@@ -483,6 +500,22 @@ rediscovered:
   for 24 minutes on the first end-to-end run. The runner image already carries the shared libraries.
   If a future Playwright version needs one the image lacks, it names the library, and installing
   that single package beats reinstating the flag.
+- **Additive-only is a prompt rule, not a constraint.** Nothing in Python compares the rewrite with
+  what went in. The frontend counts what was dropped and strikes it through, and saving anyway is
+  allowed, because a model that reflows one line is not a reason to throw away a rewrite that was
+  otherwise right. If a rewrite ever loses something the user does not notice, refusing the response
+  in `app/ai.py` is the fix.
+- **A draft lives only in the browser.** Navigating away loses it, there is no version history, and
+  the instruction that produced it is not recorded anywhere. One user correcting their own document
+  does not need an audit trail, and the diff already shows what a save is about to do.
+- **The rewrite is one call and no retry.** A model that answers with a preamble or a code fence
+  produces a diff full of noise, which the user can see and discard. Nothing strips it.
+- **Profile text is stored LF-normalised.** A form serialises a textarea as CRLF while the same
+  textarea's DOM value reads back LF, so the two differ at every line break the moment a draft is
+  hand-edited, and the diff panel marked every one of them as removed and re-added. Both boundaries
+  now normalise: `saveProfileAction` on the way in, and the profile page on the way out, for rows
+  written before the fix. `comment` and `job_ad` reach the database through the same CRLF path and
+  are not normalised, because nothing diffs them.
 
 ## Strategy
 
