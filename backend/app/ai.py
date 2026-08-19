@@ -113,3 +113,77 @@ def get_analyser() -> Analyser:
 
 
 AnalyserDep = Annotated[Analyser, Depends(get_analyser)]
+
+
+ENRICH_SYSTEM = (
+    "You maintain one job seeker's profile document. You fold new information into it and change "
+    "nothing else. You are an editor with a narrow remit, not a writer."
+)
+
+ENRICH_TASK = """Fold the update into the profile and return the whole profile back.
+
+Rules, most important first:
+
+1. Add only, with one narrow exception. Every line of the current profile must come back word for
+   word. You may extend a line - append a skill to a list that is already there. The exception:
+   where the update explicitly supplies a newer value for something a line already states - a job
+   that has ended, a count of years that has grown, a title that changed - that one line may be
+   brought up to date, and nothing else may. Be very wary of it. It applies only when the update
+   states the newer value outright, never when it merely implies one, and if the update can be
+   honoured by adding then add. Never reword, reorder, merge or summarise a line for any other
+   reason, and never drop one.
+2. Never change the structure. Same sections in the same order, same headings spelled the same way,
+   same list style, same register. Do not add a heading, do not start a new section, do not reorder
+   or re-nest anything. Put the new information under the existing heading it fits best, even when
+   the fit is loose. If the profile has no headings at all, add to it in the shape it already has.
+3. Add only what the update states. No inferred skills, no invented dates, no padding, and no
+   restating something the profile already covers. An update naming a course earns that course, not
+   the skills a course like that usually implies - the skills will be named when they are meant.
+4. Write in the profile's own voice and language. Match the lines around it: a fragment where its
+   neighbours are fragments, French where the profile is in French.
+5. Return the profile text and nothing else. No preamble, no summary of what you changed, no code
+   fence, and no Markdown that was not already there.
+
+If the current profile is empty, the update is all you have: write a first version from it, in the
+update's own words, and invent no structure you were not given.
+
+<current_profile>
+{profile}
+</current_profile>
+
+<update>
+{instruction}
+</update>"""
+
+
+def enrich(profile: str, instruction: str) -> str:
+    """The profile with the update folded in. Plain text out: the answer is the document itself,
+    so there is no object to parse."""
+    response = client.responses.create(
+        model=settings.openai_model,
+        input=[
+            {"role": "system", "content": ENRICH_SYSTEM},
+            {
+                "role": "user",
+                "content": ENRICH_TASK.format(profile=profile, instruction=instruction),
+            },
+        ],
+    )
+    return response.output_text.strip()
+
+
+def stub_enrich(profile: str, instruction: str) -> str:
+    """Appends one line, so the end-to-end diff has both untouched and added text to show."""
+    return f"{profile}\nAdded by the stub: {instruction}".strip()
+
+
+Enricher = Callable[[str, str], str]
+
+
+def get_enricher() -> Enricher:
+    if settings.ai_stub:
+        return stub_enrich
+    return enrich
+
+
+EnricherDep = Annotated[Enricher, Depends(get_enricher)]

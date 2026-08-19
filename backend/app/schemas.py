@@ -61,6 +61,19 @@ class ProfileRead(BaseModel):
     updated_at: datetime.datetime | None
 
 
+class ProfileEnrich(BaseModel):
+    """The profile as the editor currently holds it, and what to fold into it."""
+
+    content: str
+    instruction: str = Field(min_length=1)
+
+
+class ProfileDraft(BaseModel):
+    """A proposed profile. Stored nowhere - the user has not agreed to it yet."""
+
+    content: str
+
+
 class StatusUpdateCreate(BaseModel):
     date: datetime.date
     status: Status

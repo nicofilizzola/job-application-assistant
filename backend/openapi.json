@@ -735,6 +735,66 @@
         }
       }
     },
+    "/profile/enrich": {
+      "post": {
+        "tags": [
+          "profile"
+        ],
+        "summary": "Enrich Profile",
+        "description": "Folds an instruction into the text it was handed. Reads and writes no row: the draft is the\ncaller's until the user saves it through PUT.",
+        "operationId": "enrich_profile_profile_enrich_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileEnrich"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1318,6 +1378,40 @@
         ],
         "title": "JobAnalysis",
         "description": "What one model call returns. Also the response body of POST /job-ads/analyse.\n\nThe match fields are null when there is no profile to score against. No defaults: OpenAI's\nstrict structured outputs require every property to be required, and nullability is how\n\"absent\" is expressed. The 210-character summary and the four-entry lists are prompt rules,\nnot constraints here - a length limit in this model would turn a chatty model into a 500."
+      },
+      "ProfileDraft": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ProfileDraft",
+        "description": "A proposed profile. Stored nowhere - the user has not agreed to it yet."
+      },
+      "ProfileEnrich": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "instruction": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Instruction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "instruction"
+        ],
+        "title": "ProfileEnrich",
+        "description": "The profile as the editor currently holds it, and what to fold into it."
       },
       "ProfileRead": {
         "properties": {

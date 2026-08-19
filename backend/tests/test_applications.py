@@ -54,6 +54,7 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("/applications/{application_id}/match", "POST"),
         ("/profile", "GET"),
         ("/profile", "PUT"),
+        ("/profile/enrich", "POST"),
         ("/job-ads/analyse", "POST"),
     }
 
@@ -72,6 +73,7 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("POST", "/applications/{id}/match"),
         ("GET", "/profile"),
         ("PUT", "/profile"),
+        ("POST", "/profile/enrich"),
         ("POST", "/job-ads/analyse"),
     ],
 )
