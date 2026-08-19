@@ -1124,7 +1124,7 @@ cd frontend && npx tsc --noEmit && npm run lint && npm test
 Expected: all clean, Vitest still at 30. No new Vitest cases here - `AGENTS.md` limits Vitest to real
 frontend logic, and every part of this task is either a render or a call. Task 5 covers the flow.
 
-- [ ] **Step 8: Drive it by hand with the stub**
+- [x] **Step 8: Drive it by hand with the stub**
 
 Two terminals, and `AI_STUB=true` so this costs nothing and is deterministic:
 
@@ -1145,6 +1145,27 @@ At `http://localhost:3000/profile`, confirm each of these:
 - `Discard` puts the saved profile back and closes the panel.
 - `Save profile` writes the draft, shows `Saved.`, and the panel closes. Reload confirms it.
 - Toggle the theme. The added and removed backgrounds are legible in both.
+
+Done on 19 August 2026, but **scripted rather than hand-driven**. Every functional bullet above is
+already asserted by an automated test - the lock and the disabled button by `profile-ai.spec.ts`
+test 1, the panel and counts and the editable draft by test 2, the live re-diff and the warning by
+test 3, `Discard` by test 4, and manual mode's save-and-reload by `ai-mode.spec.ts`. That left theme
+legibility as the only thing no test can judge, so a throwaway spec captured the panel in both
+schemes through `emulateMedia`, and the file was deleted afterwards. It ran against the stub on the
+`test` branch, so no stored profile was touched.
+
+What the captures show, in both light and dark: the count line reads `11 words added, 0 removed`
+before the hand edit and `11 words added, 6 removed` after it, the warning appears in rose only when
+something was dropped, the dropped line is struck through on a rose band, the addition sits on an
+emerald band, and the untouched text is unmarked. All four are legible against both backgrounds.
+
+One cosmetic quirk, not worth fixing: `Next.js` counts as two words, because a word is defined as a
+letter-or-digit run and the full stop breaks it. It makes a count like `6 removed` read one or two
+high to a human eye. The count's job is to be zero or not zero.
+
+The reason it was scripted: background dev servers in this session were killed four times, each time
+the session hit a usage limit. Playwright manages its own servers inside one command that finishes
+before anything can stop it.
 
 - [x] **Step 9: Commit**
 
