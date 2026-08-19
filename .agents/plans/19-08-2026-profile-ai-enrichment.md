@@ -78,12 +78,12 @@ Copied from `AGENTS.md`. Every task's requirements implicitly include these.
 
 ## Before you start
 
-- [ ] Branch off `main`: `git switch -c profile-ai-enrichment`
-- [ ] `git status` already shows `M .gitignore`, `M skills-lock.json` and untracked
+- [x] Branch off `main`: `git switch -c profile-ai-enrichment`
+- [x] `git status` already shows `M .gitignore`, `M skills-lock.json` and untracked
       `.agents/skills/caveman/`, `.agents/skills/writing-plans/`, `.claude/skills/caveman/`,
       `.claude/skills/writing-plans/`. None of them belong to this work. Every commit step below
       uses an explicit `git add <paths>`; never `git add -A`, or those get swept in.
-- [ ] Confirm the baseline is green before changing anything and **write the three counts down**:
+- [x] Confirm the baseline is green before changing anything and **write the three counts down**:
 
       ```bash
       cd backend && uv run pytest            # 92 passed
@@ -96,7 +96,7 @@ Copied from `AGENTS.md`. Every task's requirements implicitly include these.
       so do not re-derive it that way. Every task below states how many tests it adds, and those
       numbers are only checkable against this baseline. If the baseline differs, use your own
       numbers, not the ones written here.
-- [ ] If anything talking to Postgres hangs for a minute and then reports `server closed the
+- [x] If anything talking to Postgres hangs for a minute and then reports `server closed the
       connection unexpectedly`, disconnect Proton VPN before debugging anything else.
       `.agents/notes/local-database-access.md` has the confirming test.
 
