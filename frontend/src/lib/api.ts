@@ -11,6 +11,7 @@ export type StatusUpdatePatch = components["schemas"]["StatusUpdatePatch"];
 export type StatusUpdateRead = components["schemas"]["StatusUpdateRead"];
 export type JobAnalysis = components["schemas"]["JobAnalysis"];
 export type Profile = components["schemas"]["ProfileRead"];
+export type ProfileDraft = components["schemas"]["ProfileDraft"];
 
 export class ApiError extends Error {
   constructor(
@@ -98,6 +99,13 @@ export function getProfile() {
 
 export function putProfile(content: string) {
   return call<Profile>("/profile", { method: "PUT", body: JSON.stringify({ content }) });
+}
+
+export function enrichProfile(content: string, instruction: string) {
+  return call<ProfileDraft>("/profile/enrich", {
+    method: "POST",
+    body: JSON.stringify({ content, instruction }),
+  });
 }
 
 export function analyseJobAd(text: string) {

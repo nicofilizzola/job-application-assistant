@@ -13,8 +13,9 @@ export default async function ProfilePage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <h1 className="mb-2 text-2xl font-semibold tracking-tight">Profile</h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          Your background, in your own words. AI mode scores a job advert against this, so the more
-          it says about what you have actually built, the more the score is worth.
+          Your background, in your own words. A job advert is scored against this, so the more it
+          says about what you have actually built, the more the score is worth. AI mode folds an
+          update into it for you, additively, and shows you what changed before anything is saved.
         </p>
         <ProfileForm content={profile.content} />
       </main>

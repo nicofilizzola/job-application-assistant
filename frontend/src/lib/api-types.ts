@@ -134,6 +134,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/profile/enrich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enrich Profile
+         * @description Folds an instruction into the text it was handed. Reads and writes no row: the draft is the
+         *     caller's until the user saves it through PUT.
+         */
+        post: operations["enrich_profile_profile_enrich_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -312,6 +333,24 @@ export interface components {
             match_strengths: string[] | null;
             /** Match Weaknesses */
             match_weaknesses: string[] | null;
+        };
+        /**
+         * ProfileDraft
+         * @description A proposed profile. Stored nowhere - the user has not agreed to it yet.
+         */
+        ProfileDraft: {
+            /** Content */
+            content: string;
+        };
+        /**
+         * ProfileEnrich
+         * @description The profile as the editor currently holds it, and what to fold into it.
+         */
+        ProfileEnrich: {
+            /** Content */
+            content: string;
+            /** Instruction */
+            instruction: string;
         };
         /** ProfileRead */
         ProfileRead: {
@@ -789,6 +828,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enrich_profile_profile_enrich_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileEnrich"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDraft"];
                 };
             };
             /** @description Validation Error */
