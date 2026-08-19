@@ -86,13 +86,16 @@ Copied from `AGENTS.md`. Every task's requirements implicitly include these.
 - [ ] Confirm the baseline is green before changing anything and **write the three counts down**:
 
       ```bash
-      cd backend && uv run pytest            # expect 92 passed
-      cd frontend && npm test                # expect 21 passed
-      cd frontend && npx playwright test     # expect 19 passed
+      cd backend && uv run pytest            # 92 passed
+      cd frontend && npm test                # 21 passed
+      cd frontend && npx playwright test     # 20 passed
       ```
 
-      Every task below states how many tests it adds, and those numbers are only checkable against
-      this baseline. If the baseline differs, use your own numbers, not the ones written here.
+      Those three are measured. An earlier draft of this plan put Playwright at 19, which came from
+      counting `test(` occurrences in `e2e/` rather than from a run - the real inventory is 20,
+      so do not re-derive it that way. Every task below states how many tests it adds, and those
+      numbers are only checkable against this baseline. If the baseline differs, use your own
+      numbers, not the ones written here.
 - [ ] If anything talking to Postgres hangs for a minute and then reports `server closed the
       connection unexpectedly`, disconnect Proton VPN before debugging anything else.
       `.agents/notes/local-database-access.md` has the confirming test.
@@ -1310,7 +1313,7 @@ a different string, or a `strip()` lost from `stub_enrich`, shows up here.
 cd frontend && npx playwright test
 ```
 
-Expected: 23 passed, up from the 19 in the baseline. The suite shares one database and one profile
+Expected: 24 passed, up from the 20 in the baseline. The suite shares one database and one profile
 row, and each test writes the profile it needs first, so order does not matter - but `workers: 1`
 and `fullyParallel: false` are what make that true. Do not "speed it up" by changing them.
 
@@ -1350,7 +1353,7 @@ EOF
 - Consumes: everything above. This task documents what shipped; it changes no behaviour.
 - Produces: nothing code depends on.
 
-- [ ] **Step 1: Rewrite screen 5 in the `Screens` list**
+- [x] **Step 1: Rewrite screen 5 in the `Screens` list**
 
 Replace the `5. **Profile**` bullet with:
 
@@ -1364,7 +1367,7 @@ Replace the `5. **Profile**` bullet with:
    rewrite was. Nothing is written until `Save profile`.
 ```
 
-- [ ] **Step 2: Add the route to the API table**
+- [x] **Step 2: Add the route to the API table**
 
 After the `PUT /profile` row:
 
@@ -1380,7 +1383,7 @@ stored profile, so a second instruction builds on a draft nobody has saved yet, 
 user rejects leaves no trace.
 ```
 
-- [ ] **Step 3: Extend the testing focus**
+- [x] **Step 3: Extend the testing focus**
 
 In the **pytest** list, after the analyser bullet:
 
@@ -1405,7 +1408,7 @@ In the **Playwright** list, add to the end of the sentence:
 , and the profile's AI mode - a rewrite reviewed as a diff, a hand edit re-diffing it, and Discard
 ```
 
-- [ ] **Step 4: Add the deferred decisions**
+- [x] **Step 4: Add the deferred decisions**
 
 Append to the `Deferred decisions` list:
 
@@ -1422,7 +1425,7 @@ Append to the `Deferred decisions` list:
   produces a diff full of noise, which the user can see and discard. Nothing strips it.
 ```
 
-- [ ] **Step 5: Extend the `AI_STUB` note in the environment table**
+- [x] **Step 5: Extend the `AI_STUB` note in the environment table**
 
 The table's row for `AI_STUB` says `Test only. Playwright sets it to skip OpenAI`, which is still
 true, but `backend/.env.example` says "Replaces the OpenAI call with a fixed answer". Change that
@@ -1432,7 +1435,7 @@ comment to cover both calls:
 # Only Playwright sets this. Replaces the OpenAI calls with fixed answers.
 ```
 
-- [ ] **Step 6: Update the README sentence about the key**
+- [x] **Step 6: Update the README sentence about the key**
 
 Replace the `OPENAI_API_KEY` paragraph:
 
@@ -1443,7 +1446,7 @@ never call OpenAI, but the backend builds its client at import, so the variable 
 anything to start.
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add AGENTS.md README.md backend/.env.example
@@ -1466,14 +1469,31 @@ EOF
 
 ---
 
+## Defects found during execution
+
+Recorded because both were invisible to the tasks that introduced them, and the second changed the
+design.
+
+1. **A save assertion that had stopped asserting.** Task 4's Step 6 rewrote the profile screen's
+   description to end "before anything is saved.", and `getByText("Saved.")` is a case-insensitive
+   substring match, so it matched that paragraph instead of the confirmation - completing in
+   milliseconds without waiting for the write. It had also silently disabled the wait in the four
+   pre-existing `ai-mode.spec.ts` cases, which passed only because a later navigation gave the write
+   time to land. Fixed with `{ exact: true }` at every call site, which the plan's move of
+   `saveProfile` into `e2e/helpers.ts` reduced to one place.
+2. **CRLF against LF corrupted the diff.** See the `Profile text is stored LF-normalised` deferred
+   decision in `AGENTS.md` - the fourth this feature added, and the last in the list. Fixed in
+   `d5876da`, which also restored the two end-to-end assertions to requiring exactly one
+   struck-through and one added element - the strict form is what exposed the corruption.
+
 ## Done when
 
 - [x] Task 1's prompt was approved by a human, and the approved text is in this document
-- [ ] `cd backend && uv run pytest` - 100 pass
-- [ ] `cd backend && uv run ruff format --check . && uv run ruff check .` - clean
-- [ ] `cd frontend && npx tsc --noEmit && npm run lint && npm test` - clean, Vitest at 30
-- [ ] `cd frontend && npx playwright test` - 23 pass
-- [ ] No migration was written, and `git status` shows none: nothing new is stored
+- [x] `cd backend && uv run pytest` - 100 pass
+- [x] `cd backend && uv run ruff format --check . && uv run ruff check .` - clean
+- [x] `cd frontend && npx tsc --noEmit && npm run lint && npm test` - clean, Vitest at 31
+- [x] `cd frontend && npx playwright test` - 24 pass
+- [x] No migration was written, and `git status` shows none: nothing new is stored
 - [ ] `git status` shows no unexpected files staged, and the pre-existing dirty paths
       (`.gitignore`, `skills-lock.json`, `.agents/skills/caveman/`, `.agents/skills/writing-plans/`,
       `.claude/skills/caveman/`, `.claude/skills/writing-plans/`) are still untouched
