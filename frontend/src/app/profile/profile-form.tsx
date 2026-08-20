@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useMemo, useRef, useState, useTransition } from "react";
 
 import { enrichProfileAction, saveProfileAction, type ProfileState } from "@/app/profile/actions";
 import { ProfileDiffView } from "@/components/profile-diff-view";
@@ -19,6 +19,7 @@ export function ProfileForm({ content }: { content: string }) {
   const [proposed, setProposed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rewriting, startRewrite] = useTransition();
+  const boxRef = useRef<HTMLTextAreaElement>(null);
   const [saved, setSaved] = useState(content);
 
   // A save sends the new profile back down, and that ends the review: the draft rebases onto it and
@@ -54,6 +55,19 @@ export function ProfileForm({ content }: { content: string }) {
     setProposed(false);
     setInstruction("");
     setError(null);
+  }
+
+  /** Puts the cursor on a change so it can be corrected without hunting for it. A textarea does not
+   *  scroll to a selection by itself, and centring on the line the selection starts on is close
+   *  enough without measuring wrapped rows. */
+  function jumpTo(start: number, end: number) {
+    const box = boxRef.current;
+    if (!box) return;
+    box.focus();
+    box.setSelectionRange(start, end);
+    const line = box.value.slice(0, start).split("\n").length - 1;
+    const lineHeight = Number.parseFloat(getComputedStyle(box).lineHeight) || 20;
+    box.scrollTop = Math.max(0, line * lineHeight - box.clientHeight / 2);
   }
 
   return (
@@ -102,10 +116,11 @@ export function ProfileForm({ content }: { content: string }) {
         </div>
       )}
 
-      {aiMode && proposed && <ProfileDiffView diff={diff} />}
+      {aiMode && proposed && <ProfileDiffView diff={diff} onJump={jumpTo} />}
 
       <form action={submit} className="space-y-4">
         <Textarea
+          ref={boxRef}
           id="content"
           name="content"
           aria-label="Candidate profile"
