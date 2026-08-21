@@ -577,7 +577,7 @@ EOF
   `role="region"` / `aria-label="Changes"`, the index rows by their `Edit this in the profile`
   title, the revert control by the name `Undo`, and the restore control by `Put it back`.
 
-- [ ] **Step 1: Write the box**
+- [x] **Step 1: Write the box**
 
 Create `frontend/src/components/highlighted-textarea.tsx`. Both layers share one class string on
 purpose - font, size, line height, padding, border width and wrapping have to agree to the pixel, or
@@ -653,7 +653,7 @@ export function HighlightedTextarea({
 }
 ```
 
-- [ ] **Step 2: Write the index and the dropped-text list**
+- [x] **Step 2: Write the index and the dropped-text list**
 
 Create `frontend/src/components/profile-changes-panel.tsx`:
 
@@ -762,13 +762,13 @@ export function ProfileChangesPanel({
 }
 ```
 
-- [ ] **Step 3: Delete the surface this replaces**
+- [x] **Step 3: Delete the surface this replaces**
 
 ```bash
 cd frontend && rm src/components/profile-diff-view.tsx
 ```
 
-- [ ] **Step 4: Check both compile**
+- [x] **Step 4: Check both compile**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -777,7 +777,7 @@ cd frontend && npx tsc --noEmit
 Expected: one error only, in `src/app/profile/profile-form.tsx`, which still imports
 `ProfileDiffView`. Task 3 fixes it. Do not add a shim import to silence it.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/highlighted-textarea.tsx frontend/src/components/profile-changes-panel.tsx
