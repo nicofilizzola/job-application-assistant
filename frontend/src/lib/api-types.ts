@@ -368,7 +368,7 @@ export interface components {
          * Status
          * @enum {string}
          */
-        Status: "Contacted" | "Applied" | "Interview" | "Offer" | "Rejected" | "Withdrawn";
+        Status: "Contacted" | "Applied" | "Interview" | "Tech test" | "Offer" | "Rejected" | "Withdrawn";
         /** StatusUpdateCreate */
         StatusUpdateCreate: {
             /**
