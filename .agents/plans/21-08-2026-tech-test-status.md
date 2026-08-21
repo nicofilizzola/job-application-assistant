@@ -611,7 +611,7 @@ git commit -m "docs: record the Tech test status in the spec"
 - Consumes: Tasks 1-5 committed.
 - Produces: a `main` that CI can deploy.
 
-- [ ] **Step 1: Run everything CI runs, locally**
+- [x] **Step 1: Run everything CI runs, locally**
 
 From `backend/`:
 
@@ -629,7 +629,7 @@ Expected: all PASS. `gen:types` here is a check as much as a step - if it dirtie
 `src/lib/api-types.ts`, Task 2 committed a stale file. Run `git status --short src/lib/api-types.ts`
 and commit the difference if there is one.
 
-- [ ] **Step 2: Confirm nothing from this change is uncommitted**
+- [x] **Step 2: Confirm nothing from this change is uncommitted**
 
 Run, from the root: `git status --short`
 
@@ -654,7 +654,7 @@ Do **not** commit the pre-existing entries as part of this change. They are the 
 this work, and sweeping them into a status-vocabulary commit would mix two unrelated things. Leave
 them exactly as they are and mention them when you hand back.
 
-- [ ] **Step 3: Push**
+- [x] **Step 3: Push**
 
 `.github/workflows/ci.yml` is the only route to production. It migrates the Neon `test` branch,
 runs `backend`, `frontend` and `e2e`, and only then deploys. There is no new migration in this
@@ -664,7 +664,7 @@ change, so the `migrate` job is a no-op and the interesting gate is `e2e`.
 git push origin main
 ```
 
-- [ ] **Step 4: Watch the run**
+- [x] **Step 4: Watch the run**
 
 Run: `gh run watch`
 
@@ -672,7 +672,7 @@ Expected: all six jobs green. `pytest` and Playwright share the Neon `test` bran
 it, so a queued run behind another push is normal, not a hang - the repository-wide `concurrency`
 group serialises them rather than cancelling.
 
-- [ ] **Step 5: Confirm the deployed API serves the new value**
+- [x] **Step 5: Confirm the deployed API serves the new value**
 
 Run: `curl -s https://job-application-assistant-api.vercel.app/openapi.json | grep -c "Tech test"`
 
@@ -692,16 +692,32 @@ the badge renders violet in both light and dark mode, with the label `Tech test`
 
 Tick these only when each has actually been observed, not inferred.
 
-- [ ] `POST /applications/{id}/status-updates` with `"status": "Tech test"` returns `201`, and the
+- [x] `POST /applications/{id}/status-updates` with `"status": "Tech test"` returns `201`, and the
       application's `current_status` comes back as `Tech test`.
-- [ ] `GET /applications` without `include_closed` still returns an application whose latest update
+- [x] `GET /applications` without `include_closed` still returns an application whose latest update
       is a `Tech test`. It is an open status.
-- [ ] No Alembic migration was written, and `alembic heads` is unchanged.
-- [ ] `backend/openapi.json` and `frontend/src/lib/api-types.ts` are both committed and both contain
+- [x] No Alembic migration was written, and `alembic heads` is unchanged.
+- [x] `backend/openapi.json` and `frontend/src/lib/api-types.ts` are both committed and both contain
       `Tech test`. Neither was hand-edited.
 - [ ] `Tech test` appears between `Interview` and `Offer` in all three status dropdowns: the create
       form, the add-update form, and the edit-update dialog.
 - [ ] The badge is violet and legible in light and dark mode, and carries the text `Tech test`.
-- [ ] `uv run pytest`, `npm run test`, `npx tsc --noEmit` and `npm run test:e2e` all pass.
-- [ ] `AGENTS.md` says seven statuses, lists `Tech test` in the vocabulary table, the schema comment
+- [x] `uv run pytest`, `npm run test`, `npx tsc --noEmit` and `npm run test:e2e` all pass.
+- [x] `AGENTS.md` says seven statuses, lists `Tech test` in the vocabulary table, the schema comment
       and the colour table, and its deferred-decisions note explains why this one was added.
+
+### What is left unticked, and why
+
+Three boxes above are deliberately open. Everything else was observed, not inferred.
+
+- **Task 6 Step 6**, and the two criteria that depend on it, need a human looking at the deployed UI
+  in both themes. The end-to-end suite drove the **add-update** dropdown by its visible option label
+  and passed, so that one dropdown is confirmed. The create form and the edit-update dialog map the
+  same `STATUSES` array, which is strong evidence but is not the same as having seen them render.
+- The badge's colour was never asserted as a colour. Vitest checks that `statusClasses("Tech test")`
+  contains `violet` and carries a `dark:` variant; whether violet reads well next to amber and
+  emerald on a real screen is a judgement no test makes.
+
+Shipped in seven commits, `67b42fa..95c7bde`. CI run 32476368315: all six jobs green, both services
+deployed. The deployed API's `Status` enum reads
+`['Contacted', 'Applied', 'Interview', 'Tech test', 'Offer', 'Rejected', 'Withdrawn']`.
