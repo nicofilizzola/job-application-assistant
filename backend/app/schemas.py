@@ -10,6 +10,7 @@ class Status(StrEnum):
     CONTACTED = "Contacted"
     APPLIED = "Applied"
     INTERVIEW = "Interview"
+    TECH_TEST = "Tech test"
     OFFER = "Offer"
     REJECTED = "Rejected"
     WITHDRAWN = "Withdrawn"

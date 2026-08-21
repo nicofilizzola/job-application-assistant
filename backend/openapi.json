@@ -1458,6 +1458,7 @@
           "Contacted",
           "Applied",
           "Interview",
+          "Tech test",
           "Offer",
           "Rejected",
           "Withdrawn"

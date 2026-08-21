@@ -178,12 +178,31 @@ async def test_include_closed_selects_exactly_the_closed_statuses(client, seed):
     seed([on(4, "Offer")], title="Offer")
     seed([on(5, "Rejected")], title="Rejected")
     seed([on(6, "Withdrawn")], title="Withdrawn")
+    seed([on(7, "Tech test")], title="Tech test")
 
     open_only = (await client.get("/applications")).json()
-    assert {row["title"] for row in open_only} == {"Applied", "Contacted", "Interview", "Offer"}
+    assert {row["title"] for row in open_only} == {
+        "Applied",
+        "Contacted",
+        "Interview",
+        "Offer",
+        "Tech test",
+    }
 
     everything = (await client.get("/applications", params={"include_closed": True})).json()
-    assert len(everything) == 6
+    assert len(everything) == 7
+
+
+async def test_tech_test_is_an_accepted_status(client, seed):
+    application_id = seed([on(1, "Applied")], title="Tech test round trip")
+
+    response = await client.post(
+        f"/applications/{application_id}/status-updates",
+        json={"date": "2026-08-20", "status": "Tech test", "note": "take-home sent"},
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["current_status"] == "Tech test"
 
 
 async def test_list_is_ordered_by_most_recent_update_first(client, seed):
