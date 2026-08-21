@@ -62,6 +62,9 @@ export default defineConfig({
         BACKEND_API_KEY: frontend.BACKEND_API_KEY,
         // The analyse call is made server-side, so page.route() cannot reach it. The seam is here.
         AI_STUB: "true",
+        // On Windows stdout is cp1252, and the `fastapi run` banner contains characters it cannot
+        // encode, so the server dies with a UnicodeEncodeError before it ever serves /health.
+        PYTHONIOENCODING: "utf-8",
       },
       timeout: 120_000,
       reuseExistingServer: false,

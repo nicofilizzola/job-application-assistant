@@ -342,6 +342,13 @@ forwards only ports like 80 and 443 and black-holes 5432, while answering the TC
 the connection looks established. Disconnecting the VPN fixes it.
 `.agents/notes/local-database-access.md` has the confirming test.
 
+Playwright starts both services itself, so do not start them by hand before `npm run test:e2e` - the
+backend entry sets `reuseExistingServer: false` and a hand-started server collides with it. On
+Windows that backend entry needs `PYTHONIOENCODING: "utf-8"`, which `playwright.config.ts` now sets:
+stdout is cp1252 there and the `fastapi run` banner contains characters it cannot encode, so without
+it the server dies with a `UnicodeEncodeError` before serving `/health`. CI runs on Linux and never
+hit this.
+
 ### Deployment
 
 Two Vercel projects from the one repo, distinguished by root directory:
