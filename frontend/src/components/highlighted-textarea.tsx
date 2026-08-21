@@ -25,15 +25,19 @@ export function HighlightedTextarea({
 } & Pick<ComponentProps<"textarea">, "id" | "name" | "aria-label" | "placeholder">) {
   const mirrorRef = useRef<HTMLDivElement>(null);
 
+  // Overflow belongs in the shared string, not on either layer: a scrollbar changes the content
+  // width, and a content width that differs between the layers makes them wrap differently, which
+  // paints every highlight below the first differing line a row out. `overflow-y-scroll` rather
+  // than `auto` so the gutter is reserved whether or not the text overflows.
   const shared =
-    "h-[32rem] w-full rounded-lg border px-2.5 py-2 text-base leading-6 break-words whitespace-pre-wrap md:text-sm";
+    "h-[32rem] w-full overflow-y-scroll rounded-lg border px-2.5 py-2 text-base leading-6 break-words whitespace-pre-wrap md:text-sm";
 
   return (
     <div className="relative">
       <div
         ref={mirrorRef}
         aria-hidden
-        className={`${shared} pointer-events-none absolute inset-0 overflow-hidden border-transparent text-transparent`}
+        className={`${shared} pointer-events-none absolute inset-0 border-transparent text-transparent`}
       >
         {toSegments(value, ranges).map((segment, index) =>
           segment.highlighted ? (
@@ -58,7 +62,7 @@ export function HighlightedTextarea({
           const mirror = mirrorRef.current;
           if (mirror) mirror.scrollTop = event.currentTarget.scrollTop;
         }}
-        className={`${shared} relative resize-none overflow-y-auto bg-transparent outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${
+        className={`${shared} relative resize-none bg-transparent outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${
           readOnly ? "text-muted-foreground" : ""
         }`}
       />
