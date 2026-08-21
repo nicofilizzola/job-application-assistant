@@ -153,7 +153,7 @@ their signatures and their tests, and everything in this plan is derived from th
   Task 2's `HighlightedTextarea` consumes `toSegments` and `Range`. Task 2's
   `ProfileChangesPanel` consumes `Change`. Task 3's form consumes `toChanges`, `revert`, `restore`.
 
-- [ ] **Step 1: Delete the module this one replaces**
+- [x] **Step 1: Delete the module this one replaces**
 
 The collapsed panel's model existed to render a document with folded gaps. The new surface renders
 no document, so `lines`, `hidden` and `hiddenAfter` have no consumer.
@@ -163,7 +163,7 @@ cd frontend
 rm src/lib/profile-hunks.ts src/lib/profile-hunks.test.ts
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `frontend/src/lib/profile-changes.test.ts`:
 
@@ -336,7 +336,7 @@ describe("restore", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 ```bash
 cd frontend && npm test -- profile-changes
@@ -344,7 +344,7 @@ cd frontend && npm test -- profile-changes
 
 Expected: the file fails to resolve `@/lib/profile-changes`.
 
-- [ ] **Step 4: Write the module**
+- [x] **Step 4: Write the module**
 
 Create `frontend/src/lib/profile-changes.ts`:
 
@@ -498,7 +498,7 @@ export function restore(draft: string, change: Change): string {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 cd frontend && npm test && npx tsc --noEmit && npm run lint
@@ -514,7 +514,7 @@ If `revert(draft, change)` does not give `PROFILE` back exactly, print both with
 look for a newline: an added run that ends with `\n` must have that newline inside its span, or
 reverting leaves a blank line behind.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/lib/profile-changes.ts frontend/src/lib/profile-changes.test.ts
