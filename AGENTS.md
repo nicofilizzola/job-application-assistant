@@ -40,20 +40,23 @@ Consequences the implementation must honour:
 - `Derniere maj` from the spreadsheet does not exist as a field. It is `max(update.date)`.
 - `Candidate le` does not exist as a field. It is the date of the earliest update.
 - Interview rounds are not distinct statuses. Two `Interview` updates on different dates *is* a
-  second round; the dates supply the ordering and the notes supply the detail.
+  second round; the dates supply the ordering and the notes supply the detail. `Tech test` repeats
+  the same way - a screening test and a later take-home are two updates, not two statuses.
 
 ### Status vocabulary
 
-Six statuses, derived from the spreadsheet's `Etat` column and translated to English:
+Seven statuses. Six are derived from the spreadsheet's `Etat` column and translated to English; the
+seventh, `Tech test`, has no spreadsheet origin.
 
-| Status      | Meaning                                        | Spreadsheet origin |
-| ----------- | ---------------------------------------------- | ------------------ |
-| `Contacted` | They approached you; you did not apply         | `Contact recu`     |
-| `Applied`   | You sent an application                        | `Envoye`           |
-| `Interview` | An interview happened (repeatable)             | `1E`, `2E`         |
-| `Offer`     | An offer was made                              | -                  |
-| `Rejected`  | They said no                                   | `Refus direct`     |
-| `Withdrawn` | You pulled out or lost interest                | -                  |
+| Status      | Meaning                                             | Spreadsheet origin |
+| ----------- | --------------------------------------------------- | ------------------ |
+| `Contacted` | They approached you; you did not apply              | `Contact recu`     |
+| `Applied`   | You sent an application                             | `Envoye`           |
+| `Interview` | An interview happened (repeatable)                  | `1E`, `2E`         |
+| `Tech test` | A technical test or take-home happened (repeatable) | -                  |
+| `Offer`     | An offer was made                                   | -                  |
+| `Rejected`  | They said no                                        | `Refus direct`     |
+| `Withdrawn` | You pulled out or lost interest                     | -                  |
 
 `No apres 1E` maps to an `Interview` update followed by a `Rejected` update, which is exactly the
 information the single spreadsheet value was compressing.
@@ -252,7 +255,7 @@ status_updates
   id             uuid primary key
   application_id uuid not null references applications(id) on delete cascade
   date           date        not null   -- the day the event happened, user-set
-  status         text        not null   -- Contacted | Applied | Interview | Offer | Rejected | Withdrawn
+  status         text        not null   -- Contacted | Applied | Interview | Tech test | Offer | Rejected | Withdrawn
   note           text        null
   created_at     timestamptz not null default now()
 
@@ -442,6 +445,7 @@ Status colors are functional, not decorative:
 | `Contacted` | Sky     | Inbound, neutral-positive          |
 | `Applied`   | Zinc    | In flight, waiting                 |
 | `Interview` | Amber   | Active, in progress                |
+| `Tech test` | Violet  | Active, awaiting your work         |
 | `Offer`     | Emerald | Win                                |
 | `Rejected`  | Rose    | Loss                               |
 | `Withdrawn` | Muted   | Closed by choice, de-emphasised    |
@@ -462,7 +466,10 @@ rediscovered:
   that way for now. A datalist of existing values is the cheap fix if typos become annoying.
 - **No `Screening` or `Ghosted` status.** A recruiter phone call is an `Interview`; silence is
   recorded as `Rejected` with a note, matching the existing `No response within a month = Rejected`
-  convention.
+  convention. `Tech test` was added on 21 Aug 2026 as the one exception: a take-home is work the
+  candidate does alone, on a deadline, and lumping it under `Interview` hid the distinction that
+  actually matters when reading the timeline back. Adding it cost one enum member and one colour,
+  because `status` is `text` with no constraint.
 - **Every read crosses the network twice.** browser -> Next -> FastAPI is the price of the split
   back-end; a single Next app with direct database access would do it in one. Acceptable for one
   user on a CRUD screen. If the list ever feels slow, the fix is caching in the Next layer, not
