@@ -1019,7 +1019,7 @@ At `/profile`, confirm each of these:
   `Put it back` returns it to the same spot.
 - Toggle the theme. The emerald highlight and the rose dropped-text band are legible in both.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/app/profile/profile-form.tsx
@@ -1055,7 +1055,7 @@ EOF
 - Consumes: the accessible names Task 3 produced.
 - Produces: nothing code depends on.
 
-- [ ] **Step 1: Rewrite the two cases that address the old surface**
+- [x] **Step 1: Rewrite the two cases that address the old surface**
 
 Two existing cases in `frontend/e2e/profile-ai.spec.ts` assert things that no longer exist - a
 rendered diff document, `Show whole profile`, and `... N unchanged lines ...`. Replace the case named
@@ -1111,7 +1111,7 @@ assertion:
 stays as it is, since the new copy still begins with that sentence. Run the case and confirm rather
 than assuming.
 
-- [ ] **Step 2: Add the three new cases**
+- [x] **Step 2: Add the three new cases**
 
 Append to `frontend/e2e/profile-ai.spec.ts`:
 
@@ -1172,7 +1172,7 @@ test("manual mode highlights unsaved edits in the same box", async ({ page }) =>
 });
 ```
 
-- [ ] **Step 3: Run the suite**
+- [x] **Step 3: Run the suite**
 
 Through the PowerShell tool, with no dev server running:
 
@@ -1182,12 +1182,13 @@ npx playwright test
 Pop-Location
 ```
 
-Expected: **29 passed** - 26 in the baseline, plus the three new cases, with two rewritten in place.
+Expected: **30 passed** - 26 in the baseline, plus the three new cases and a fourth guarding the
+wrapping parity of the box's two layers, with two rewritten in place.
 
 If a rewritten case fails on a locator, fix the locator. If one fails on behaviour, report it rather
 than loosening the assertion - the whole point of this task is that the single box behaves.
 
-- [ ] **Step 4: Bring the spec up to date**
+- [x] **Step 4: Bring the spec up to date**
 
 In `AGENTS.md`, replace the second half of screen 5's bullet - everything from `The diff shows only
 the changed lines` to `rewrite was.` - with:
@@ -1232,7 +1233,7 @@ insertion into the user's own document, and an off-by-one corrupts it quietly ra
 loudly.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/e2e/profile-ai.spec.ts AGENTS.md
@@ -1258,13 +1259,15 @@ EOF
 
 ## Done when
 
-- [ ] `cd frontend && npm test` - 48 pass
-- [ ] `cd frontend && npx tsc --noEmit && npm run lint` - clean
-- [ ] `cd frontend && npx playwright test` - 29 pass, with no dev server running on this repo
-- [ ] `cd backend && uv run pytest` - 100 pass, unchanged. No backend file is touched by this plan,
-      so this is a regression check rather than a result
-- [ ] No migration, no new dependency, no change to `openapi.json` or `api-types.ts`
-- [ ] `git status` shows no unexpected files staged, and the six pre-existing dirty paths
+- [x] `cd frontend && npm test` - 48 pass
+- [x] `cd frontend && npx tsc --noEmit && npm run lint` - clean
+- [x] `cd frontend && npx playwright test` - 30 pass, with no dev server running on this repo
+- [x] `cd backend && uv run pytest` - 101 pass, unchanged. No backend file is touched by this plan,
+      so this is a regression check rather than a result. The plan said 100; the extra case arrived
+      with the `Tech test` status feature that landed on main after this was drafted, which is also
+      where the Vitest baseline of 42 came from
+- [x] No migration, no new dependency, no change to `openapi.json` or `api-types.ts`
+- [x] `git status` shows no unexpected files staged, and the six pre-existing dirty paths
       (`.gitignore`, `skills-lock.json`, `.agents/skills/caveman/`, `.agents/skills/writing-plans/`,
       `.claude/skills/caveman/`, `.claude/skills/writing-plans/`) are untouched
 - [ ] **A look at a real profile, by hand, with a real rewrite.** The stub appends one line, which is
