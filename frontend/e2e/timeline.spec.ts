@@ -29,7 +29,9 @@ test("correcting an entry's date re-derives the current status", async ({ page }
 
 test("correcting an entry's status and note persists", async ({ page }) => {
   await createApplication(page, { title: "Wrong status", date: "2026-08-02" });
-  await addUpdate(page, "Interview", "2026-08-10", "was actually an offer");
+  await addUpdate(page, "Tech test", "2026-08-10", "was actually an offer");
+
+  await expect(timeline(page)).toContainText("Tech test");
 
   await editUpdate(page, "was actually an offer", { status: "Offer", note: "offer received" });
 
