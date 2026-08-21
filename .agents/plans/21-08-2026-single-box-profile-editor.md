@@ -817,7 +817,7 @@ EOF
   `AI mode` (switch), `What to add` (instruction textarea), `Candidate profile` (the one box),
   `Rewrite profile`, `Save profile`, `Discard`, `Undo`, `Put it back`, and the `Changes` region.
 
-- [ ] **Step 1: Rewrite the form**
+- [x] **Step 1: Rewrite the form**
 
 Replace `frontend/src/app/profile/profile-form.tsx` with:
 
@@ -987,7 +987,7 @@ in AI mode - that is the "one box everywhere" decision, and it means typing in m
 index of unsaved edits. And `ranges` is flattened from `changes`, so the same grouping drives both
 the paint and the index; there is no second source of truth about what changed.
 
-- [ ] **Step 2: Check it compiles and the unit suite still passes**
+- [x] **Step 2: Check it compiles and the unit suite still passes**
 
 ```bash
 cd frontend && npx tsc --noEmit && npm run lint && npm test
@@ -996,7 +996,7 @@ cd frontend && npx tsc --noEmit && npm run lint && npm test
 Expected: clean, Vitest still at 48. No Vitest case is added here: every part of this task is a
 render or a state update, and `AGENTS.md` keeps Vitest to real logic.
 
-- [ ] **Step 3: Drive it by hand**
+- [x] **Step 3: Drive it by hand**
 
 Stop any dev server first, then:
 
