@@ -4,12 +4,14 @@ import { Loader2 } from "lucide-react";
 import { useActionState, useMemo, useRef, useState, useTransition } from "react";
 
 import { enrichProfileAction, saveProfileAction, type ProfileState } from "@/app/profile/actions";
-import { ProfileDiffView } from "@/components/profile-diff-view";
+import { HighlightedTextarea } from "@/components/highlighted-textarea";
+import { ProfileChangesPanel } from "@/components/profile-changes-panel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { diffProfile } from "@/lib/profile-diff";
+import { restore, revert, toChanges, type Change } from "@/lib/profile-changes";
 
 export function ProfileForm({ content }: { content: string }) {
   const [state, submit, pending] = useActionState<ProfileState, FormData>(saveProfileAction, {});
@@ -19,11 +21,11 @@ export function ProfileForm({ content }: { content: string }) {
   const [proposed, setProposed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rewriting, startRewrite] = useTransition();
-  const boxRef = useRef<HTMLTextAreaElement>(null);
   const [saved, setSaved] = useState(content);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
 
   // A save sends the new profile back down, and that ends the review: the draft rebases onto it and
-  // the AI panel closes. Remounting on a key would do the same and would also throw away
+  // the panel closes. Remounting on a key would do the same and would also throw away
   // useActionState, and with it the "Saved." confirmation.
   if (saved !== content) {
     setSaved(content);
@@ -32,9 +34,11 @@ export function ProfileForm({ content }: { content: string }) {
     setInstruction("");
   }
 
-  // Recomputed on every keystroke: hand-editing the draft is part of reviewing it, so the diff has
-  // to follow the edit rather than freeze on what the model returned.
+  // Recomputed on every keystroke, in both modes: the box shows what a save would change, whether
+  // the change came from a rewrite or from typing.
   const diff = useMemo(() => diffProfile(content, draft), [content, draft]);
+  const changes = useMemo(() => toChanges(diff), [diff]);
+  const ranges = useMemo(() => changes.flatMap((change) => change.added), [changes]);
   const editable = !aiMode || (proposed && !rewriting);
 
   function rewrite() {
@@ -66,7 +70,7 @@ export function ProfileForm({ content }: { content: string }) {
     box.focus();
     box.setSelectionRange(start, end);
     const line = box.value.slice(0, start).split("\n").length - 1;
-    const lineHeight = Number.parseFloat(getComputedStyle(box).lineHeight) || 20;
+    const lineHeight = Number.parseFloat(getComputedStyle(box).lineHeight) || 24;
     box.scrollTop = Math.max(0, line * lineHeight - box.clientHeight / 2);
   }
 
@@ -94,11 +98,7 @@ export function ProfileForm({ content }: { content: string }) {
             placeholder="I finished the AWS Solutions Architect course, so add it to my certifications."
           />
           <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              onClick={rewrite}
-              disabled={rewriting || instruction.trim() === ""}
-            >
+            <Button type="button" onClick={rewrite} disabled={rewriting || instruction.trim() === ""}>
               {rewriting && <Loader2 className="animate-spin" aria-hidden />}
               {rewriting ? "Rewriting..." : "Rewrite profile"}
             </Button>
@@ -116,21 +116,29 @@ export function ProfileForm({ content }: { content: string }) {
         </div>
       )}
 
-      {aiMode && proposed && <ProfileDiffView diff={diff} onJump={jumpTo} />}
+      {changes.length > 0 && (
+        <ProfileChangesPanel
+          changes={changes}
+          addedWords={diff.addedWords}
+          removedWords={diff.removedWords}
+          onJump={jumpTo}
+          onRevert={(change: Change) => setDraft(revert(draft, change))}
+          onRestore={(change: Change) => setDraft(restore(draft, change))}
+        />
+      )}
 
       <form action={submit} className="space-y-4">
-        <Textarea
-          ref={boxRef}
+        <HighlightedTextarea
+          boxRef={boxRef}
           id="content"
           name="content"
           aria-label="Candidate profile"
-          rows={24}
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={setDraft}
+          ranges={ranges}
           // readOnly, not disabled: a disabled field submits nothing, and this one carries the whole
           // profile, so saving from AI mode would blank it.
           readOnly={!editable}
-          className={editable ? undefined : "text-muted-foreground"}
           placeholder="Your background, skills, what you have shipped, what you are looking for."
         />
         <div className="flex items-center gap-3">
@@ -138,12 +146,7 @@ export function ProfileForm({ content }: { content: string }) {
             {pending ? "Saving..." : "Save profile"}
           </Button>
           {proposed && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={discard}
-              disabled={pending || rewriting}
-            >
+            <Button type="button" variant="ghost" onClick={discard} disabled={pending || rewriting}>
               Discard
             </Button>
           )}
