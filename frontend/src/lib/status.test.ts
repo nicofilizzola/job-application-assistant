@@ -7,6 +7,7 @@ describe("isClosed", () => {
     ["Contacted", false],
     ["Applied", false],
     ["Interview", false],
+    ["Tech test", false],
     ["Offer", false],
     ["Rejected", true],
     ["Withdrawn", true],
@@ -31,6 +32,7 @@ describe("statusClasses", () => {
     expect(statusClasses("Contacted")).toContain("sky");
     expect(statusClasses("Applied")).toContain("zinc");
     expect(statusClasses("Interview")).toContain("amber");
+    expect(statusClasses("Tech test")).toContain("violet");
     expect(statusClasses("Offer")).toContain("emerald");
     expect(statusClasses("Rejected")).toContain("rose");
     expect(statusClasses("Withdrawn")).toContain("muted-foreground");
@@ -40,5 +42,17 @@ describe("statusClasses", () => {
     for (const status of STATUSES) {
       expect(statusClasses(status)).toContain("dark:");
     }
+  });
+
+  it("lists the statuses as a funnel", () => {
+    expect(STATUSES).toEqual([
+      "Contacted",
+      "Applied",
+      "Interview",
+      "Tech test",
+      "Offer",
+      "Rejected",
+      "Withdrawn",
+    ]);
   });
 });

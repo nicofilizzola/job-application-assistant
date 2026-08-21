@@ -6,6 +6,7 @@ export const STATUSES: readonly Status[] = [
   "Contacted",
   "Applied",
   "Interview",
+  "Tech test",
   "Offer",
   "Rejected",
   "Withdrawn",
@@ -28,6 +29,8 @@ const CLASSES: Record<Status, string> = {
     "border-zinc-300 bg-zinc-100 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
   Interview:
     "border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
+  "Tech test":
+    "border-violet-300 bg-violet-100 text-violet-900 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200",
   Offer:
     "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
   Rejected:
