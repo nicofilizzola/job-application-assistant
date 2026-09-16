@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
-from app.ai import AnalyserDep
+from app.ai import AnalyserDep, TailorDep
 from app.db import get_session
 from app.models import Application, StatusUpdate
 from app.routers.profile import require_profile
@@ -124,6 +124,22 @@ def score_match(application_id: uuid.UUID, session: SessionDep, analyser: Analys
     application.match_summary = analysis.match_summary
     application.match_strengths = analysis.match_strengths
     application.match_weaknesses = analysis.match_weaknesses
+    session.flush()
+    return application
+
+
+@router.post("/{application_id}/resume", response_model=ApplicationDetail)
+def write_resume(application_id: uuid.UUID, session: SessionDep, tailor: TailorDep):
+    """Re-writes the stored advert into a CV against the current profile, which is the other half
+    of why the advert is stored at all."""
+    application = _load(session, application_id)
+    # The missing advert is checked first, so an application with neither reports the thing the
+    # user can actually see on the screen.
+    if not application.job_ad:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This application has no stored job advert to write from"
+        )
+    application.resume = tailor(application.job_ad, require_profile(session))
     session.flush()
     return application
 
