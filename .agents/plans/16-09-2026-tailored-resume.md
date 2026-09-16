@@ -326,7 +326,7 @@ by `POST /applications` and cannot be reached by `PATCH`.
 
 **Adds 3 tests.**
 
-- [ ] **Step 1: Write the three failing tests**
+- [x] **Step 1: Write the three failing tests**
 
 In `backend/tests/test_applications.py`, after `test_patch_cannot_touch_the_ai_fields`:
 
@@ -359,13 +359,13 @@ async def test_patch_cannot_touch_the_resume(client):
     assert body["resume"] == "Original CV."
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [x] **Step 2: Run them and watch them fail**
 
 Run: `cd backend && uv run pytest tests/test_applications.py -k resume -v`
 Expected: 3 failed, with `KeyError: 'resume'` - `ApplicationDetail` has no such field, so the
 response body has no such key.
 
-- [ ] **Step 3: Add the column**
+- [x] **Step 3: Add the column**
 
 In `backend/app/models.py`, inside `Application`, immediately after `match_weaknesses`:
 
@@ -375,7 +375,7 @@ In `backend/app/models.py`, inside `Application`, immediately after `match_weakn
     resume: Mapped[str | None] = mapped_column(Text)
 ```
 
-- [ ] **Step 4: Add the two schema fields**
+- [x] **Step 4: Add the two schema fields**
 
 In `backend/app/schemas.py`, in `ApplicationCreate`, after `match_weaknesses`:
 
@@ -392,7 +392,7 @@ and in `ApplicationDetail`, after `match_weaknesses`:
 `ApplicationPatch` gets nothing. `ApplicationListItem` gets nothing either - the list row shows a
 title, a company, two ratings and a status, and a CV is not summarisable into a column.
 
-- [ ] **Step 5: Generate the migration**
+- [x] **Step 5: Generate the migration**
 
 Run, from `backend/`:
 
@@ -413,7 +413,7 @@ def downgrade() -> None:
     op.drop_column("applications", "resume")
 ```
 
-- [ ] **Step 6: Apply it to both branches**
+- [x] **Step 6: Apply it to both branches**
 
 The dev branch is what `.env` points at. The test branch is a second database and `pytest` never
 migrates it, so it has to be migrated by hand or the next step fails on a missing column.
@@ -433,17 +433,17 @@ uv run alembic upgrade head
 
 Unset `DATABASE_URL` afterwards, or the rest of the session runs against the test branch.
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `cd backend && uv run pytest`
 Expected: PASS, baseline + 3.
 
-- [ ] **Step 8: Regenerate the committed OpenAPI schema**
+- [x] **Step 8: Regenerate the committed OpenAPI schema**
 
 Run: `cd backend && uv run python -m scripts.export_openapi`
 CI fails the build if `openapi.json` differs from what the models produce, so this is not optional.
 
-- [ ] **Step 9: Lint and commit**
+- [x] **Step 9: Lint and commit**
 
 ```bash
 cd backend && uv run ruff check . && uv run ruff format --check .
@@ -473,7 +473,7 @@ yet: this task is finished when `stub_tailor` behaves and `ruff` is clean.
 
 **Adds 2 tests.**
 
-- [ ] **Step 1: Write the two failing tests**
+- [x] **Step 1: Write the two failing tests**
 
 In `backend/tests/test_ai.py`, extend the import to `from app.ai import half_step, stub_enrich,
 stub_tailor` and append:
@@ -493,18 +493,18 @@ def test_the_stub_tailor_keeps_only_the_opening_of_a_long_advert():
     assert resume.endswith("TAILORED FOR\n" + "x" * 60)
 ```
 
-- [ ] **Step 2: Run them and watch them fail**
+- [x] **Step 2: Run them and watch them fail**
 
 Run: `cd backend && uv run pytest tests/test_ai.py -v`
 Expected: collection error - `ImportError: cannot import name 'stub_tailor' from 'app.ai'`.
 
-- [ ] **Step 3: Paste the approved prompt into `app/ai.py`**
+- [x] **Step 3: Paste the approved prompt into `app/ai.py`**
 
 Append to the end of `backend/app/ai.py` the `RESUME_SYSTEM` and `RESUME_TASK` assignments from
 Task 1, Step 3 of this file, **verbatim**. Do not reword them, do not re-wrap them, and do not
 "improve" them while pasting: that text is what was signed off.
 
-- [ ] **Step 4: Write the call, the stub and the dependency**
+- [x] **Step 4: Write the call, the stub and the dependency**
 
 Append this immediately below the two constants:
 
@@ -553,12 +553,12 @@ TailorDep = Annotated[Tailor, Depends(get_tailor)]
 Nothing new has to be imported: `Callable`, `Annotated`, `Depends`, `client` and `settings` are all
 already at the top of the file.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cd backend && uv run pytest tests/test_ai.py -v`
 Expected: PASS, 11 tests in this file (9 before, 2 added).
 
-- [ ] **Step 6: Lint and commit**
+- [x] **Step 6: Lint and commit**
 
 ```bash
 cd backend && uv run ruff check . && uv run ruff format --check .
@@ -593,7 +593,7 @@ This task also extracts `require_profile`, because three callers now need "the p
 `test_every_application_route_requires_the_api_key`, which is parametrized - each row added to
 it is a test.
 
-- [ ] **Step 1: Add the recorder fixture**
+- [x] **Step 1: Add the recorder fixture**
 
 In `backend/tests/conftest.py`, extend the AI import to `from app.ai import get_analyser,
 get_enricher, get_tailor` and append after `stub_enricher`:
@@ -621,7 +621,7 @@ This fixture shares its name with `app.ai.stub_tailor`, which is deliberate: the
 are named after the dependency they override. They never collide, because a fixture is only bound
 where a test declares a parameter of that name, and `test_ai.py` imports the function instead.
 
-- [ ] **Step 2: Write the five failing tests**
+- [x] **Step 2: Write the five failing tests**
 
 Create `backend/tests/test_resume.py`. It imports nothing from the other test modules yet -
 Task 5 adds the `create` helper when its tests need an application to write onto, and importing
@@ -680,14 +680,14 @@ async def test_a_draft_cv_rejects_an_empty_advert(client, stub_tailor):
     assert (await client.post("/job-ads/resume", json={"text": ""})).status_code == 422
 ```
 
-- [ ] **Step 3: Run them and watch them fail**
+- [x] **Step 3: Run them and watch them fail**
 
 Run: `cd backend && uv run pytest tests/test_resume.py -v`
 Expected: 5 failed with `404`, because the route does not exist (the `422` case fails too - it gets
 a 404 rather than a 422). The route inventory and the auth list fail as well once Step 6 lands,
 which is why Step 7 adds their rows in this task rather than the next one.
 
-- [ ] **Step 4: Add the response model**
+- [x] **Step 4: Add the response model**
 
 In `backend/app/schemas.py`, after `ProfileDraft`:
 
@@ -699,7 +699,7 @@ class ResumeDraft(BaseModel):
     content: str
 ```
 
-- [ ] **Step 5: Extract `require_profile`**
+- [x] **Step 5: Extract `require_profile`**
 
 In `backend/app/routers/profile.py`, extend the FastAPI import to
 `from fastapi import APIRouter, Depends, HTTPException, status` and add below `load_content`:
@@ -737,7 +737,7 @@ entirely - `score_match` was its only caller there - so leaving it in the import
 and `ruff` fails the task. It stays imported in `job_ads.py`, where `analyse_job_ad` still uses it,
 because that route deliberately does not refuse an empty profile.
 
-- [ ] **Step 6: Add the route**
+- [x] **Step 6: Add the route**
 
 In `backend/app/routers/job_ads.py`, extend the imports to
 `from app.ai import AnalyserDep, TailorDep`,
@@ -752,7 +752,7 @@ def write_draft_resume(payload: JobAdText, session: SessionDep, tailor: TailorDe
     return ResumeDraft(content=tailor(payload.text, require_profile(session)))
 ```
 
-- [ ] **Step 7: Declare the new route**
+- [x] **Step 7: Declare the new route**
 
 Adding a route breaks `test_openapi_exposes_exactly_the_expected_routes`, which asserts on an
 exact set. In `backend/tests/test_applications.py`, add to that set:
@@ -771,7 +771,7 @@ The auth test sends a body this route would reject as a 422. It never gets that 
 is checked by a router-level dependency, before the body is validated. `/job-ads/analyse` is
 already in that list for the same reason.
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `cd backend && uv run pytest tests/test_resume.py -v`
 Expected: PASS, 5 tests.
@@ -781,7 +781,7 @@ Then run the whole suite, because Step 5 touched `score_match`:
 Run: `cd backend && uv run pytest`
 Expected: PASS, baseline + 3 + 2 + 6.
 
-- [ ] **Step 9: Regenerate the schema, lint, commit**
+- [x] **Step 9: Regenerate the schema, lint, commit**
 
 ```bash
 cd backend && uv run python -m scripts.export_openapi
@@ -816,7 +816,7 @@ the same two conditions.
 `test_every_application_route_requires_the_api_key`, which is parametrized - each row added to it
 is a test.
 
-- [ ] **Step 1: Write the four failing tests**
+- [x] **Step 1: Write the four failing tests**
 
 Append to `backend/tests/test_resume.py`, and add `import uuid` plus
 `from tests.test_applications import create` at the top of that file - this is the first task
@@ -865,7 +865,7 @@ async def test_writing_for_an_unknown_application_is_404(client, stub_tailor):
     assert response.status_code == 404
 ```
 
-- [ ] **Step 2: Add the two routes to the inventory and the auth list**
+- [x] **Step 2: Add the two routes to the inventory and the auth list**
 
 In `backend/tests/test_applications.py`, add to the set in
 `test_openapi_exposes_exactly_the_expected_routes`:
@@ -882,13 +882,13 @@ and to the parametrize list on `test_every_application_route_requires_the_api_ke
 
 `/job-ads/resume` went into both lists in Task 4, alongside the route itself.
 
-- [ ] **Step 3: Run them and watch them fail**
+- [x] **Step 3: Run them and watch them fail**
 
 Run: `cd backend && uv run pytest tests/test_resume.py tests/test_applications.py -v`
 Expected: the four new tests fail with `404`, the route inventory fails on a set that is missing
 `/applications/{application_id}/resume`, and the new auth row fails with `404` instead of `401`.
 
-- [ ] **Step 4: Add the route**
+- [x] **Step 4: Add the route**
 
 In `backend/app/routers/applications.py`, extend the AI import to
 `from app.ai import AnalyserDep, TailorDep` and add immediately after `score_match`:
@@ -911,12 +911,12 @@ def write_resume(application_id: uuid.UUID, session: SessionDep, tailor: TailorD
 Order matters in the two refusals: the missing advert is checked first, so an application with
 neither an advert nor a profile reports the thing the user can actually see on the screen.
 
-- [ ] **Step 5: Run the whole suite**
+- [x] **Step 5: Run the whole suite**
 
 Run: `cd backend && uv run pytest`
 Expected: PASS, baseline + 16 (3 + 2 + 5 + 6).
 
-- [ ] **Step 6: Regenerate both generated files**
+- [x] **Step 6: Regenerate both generated files**
 
 ```bash
 cd backend && uv run python -m scripts.export_openapi
@@ -927,7 +927,7 @@ cd frontend && npm run gen:types
 this is the first point where it matters. Check `git diff frontend/src/lib/api-types.ts` mentions
 `resume` and `ResumeDraft`.
 
-- [ ] **Step 7: Lint and commit**
+- [x] **Step 7: Lint and commit**
 
 ```bash
 cd backend && uv run ruff check . && uv run ruff format --check .
@@ -965,7 +965,7 @@ the create. After this task a CV can be written and saved, but not re-written.
 copied. `AGENTS.md` is explicit that render-only components are not given tests to reach a coverage
 number. Task 8 covers this task end to end instead.
 
-- [ ] **Step 1: Add the two API calls**
+- [x] **Step 1: Add the two API calls**
 
 In `frontend/src/lib/api.ts`, add the type beside the other exported types:
 
@@ -985,7 +985,7 @@ export function writeResume(id: string) {
 }
 ```
 
-- [ ] **Step 2: Add the two Server Actions**
+- [x] **Step 2: Add the two Server Actions**
 
 In `frontend/src/app/applications/actions.ts`, extend the import from `@/lib/api` with
 `tailorResume` and `writeResume`, then add `resume` to `readAiFields`:
@@ -1043,7 +1043,7 @@ export async function writeResumeAction(id: string): Promise<{ error?: string }>
 The backend's other 409 on that route - no stored advert - cannot reach this message, because the
 button is only rendered when there is one. `scoreMatchAction` makes the same trade.
 
-- [ ] **Step 3: Create the panel**
+- [x] **Step 3: Create the panel**
 
 Create `frontend/src/components/resume-panel.tsx`:
 
@@ -1086,7 +1086,7 @@ export function ResumePanel({ resume }: { resume: string }) {
 label is spelled out beside the icon, because an icon-only button says nothing to a screen reader
 and colour is never the only signal here either.
 
-- [ ] **Step 4: Add the second button to the analyser**
+- [x] **Step 4: Add the second button to the analyser**
 
 Replace `frontend/src/components/job-ad-analyser.tsx` entirely:
 
@@ -1210,7 +1210,7 @@ export function JobAdAnalyser({
 }
 ```
 
-- [ ] **Step 5: Hold the CV on the form and submit it**
+- [x] **Step 5: Hold the CV on the form and submit it**
 
 In `frontend/src/components/application-form.tsx`, add the import:
 
@@ -1248,7 +1248,7 @@ block, inside the `<form>`:
 It is a separate conditional, not part of the `prefill` block, because a CV can exist with no
 analysis behind it.
 
-- [ ] **Step 6: Check it compiles and the existing suites still pass**
+- [x] **Step 6: Check it compiles and the existing suites still pass**
 
 ```bash
 cd frontend && npx next typegen && npx tsc --noEmit
@@ -1258,7 +1258,7 @@ cd frontend && npm test
 
 Expected: no type errors, no lint errors, Vitest unchanged at the baseline count.
 
-- [ ] **Step 7: Try it by hand**
+- [x] **Step 7: Try it by hand**
 
 Start both services (`cd backend && uv run fastapi dev app/main.py`, `cd frontend && npm run dev`),
 write something into `/profile`, then open `/applications/new`, turn AI mode on, paste a real
@@ -1267,7 +1267,7 @@ first time the real prompt meets a real advert, and it is much cheaper to fix th
 after Task 10 has written it into the spec. Press `Copy` and paste it somewhere to confirm the line
 breaks survive.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/lib/api.ts frontend/src/app/applications/actions.ts frontend/src/components/resume-panel.tsx frontend/src/components/job-ad-analyser.tsx frontend/src/components/application-form.tsx
@@ -1293,7 +1293,7 @@ Where a stored CV is read, copied, and written again when the profile has improv
 
 **Adds 0 Vitest tests**, for the same reason as Task 6. Task 8 covers it end to end.
 
-- [ ] **Step 1: Create the button**
+- [x] **Step 1: Create the button**
 
 Create `frontend/src/components/write-resume-button.tsx`:
 
@@ -1332,7 +1332,7 @@ export function WriteResumeButton({ id, written }: { id: string; written: boolea
 }
 ```
 
-- [ ] **Step 2: Render the panel and the button on the detail page**
+- [x] **Step 2: Render the panel and the button on the detail page**
 
 In `frontend/src/app/applications/[id]/page.tsx`, add the two imports beside the existing ones:
 
@@ -1362,7 +1362,7 @@ and add the button to the action row, beside `ScoreMatchButton`:
 Both are gated on `job_ad` for the same reason: neither has anything to work from without the stored
 advert, and a button that can only fail is worse than no button.
 
-- [ ] **Step 3: Check it compiles**
+- [x] **Step 3: Check it compiles**
 
 ```bash
 cd frontend && npx next typegen && npx tsc --noEmit
@@ -1371,13 +1371,13 @@ cd frontend && npm run lint
 
 Expected: clean.
 
-- [ ] **Step 4: Try it by hand**
+- [x] **Step 4: Try it by hand**
 
 With both services running, open an application created through AI mode, press `Write my CV`, and
 confirm the panel appears and the button relabels to `Write it again`. Then blank `/profile`, come
 back, and press it: the refusal must appear and the CV already on the page must still be there.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/write-resume-button.tsx "frontend/src/app/applications/[id]/page.tsx"
@@ -1401,7 +1401,7 @@ Three tests through the stub, covering the two screens and the one refusal.
 
 **Adds 3 Playwright tests.**
 
-- [ ] **Step 1: Write the three tests**
+- [x] **Step 1: Write the three tests**
 
 Append to `frontend/e2e/ai-mode.spec.ts`:
 
@@ -1468,13 +1468,13 @@ worth proving: the two buttons are independent, and a CV written without an anal
 the database. `Write my CV` and `Write it again` are distinct accessible names, so the second test's
 final assertion cannot pass against the pre-click state.
 
-- [ ] **Step 2: Run the end-to-end suite**
+- [x] **Step 2: Run the end-to-end suite**
 
 Run: `cd frontend && npm run test:e2e`
 Expected: PASS, baseline + 3. Do not start either service by hand first - Playwright sets
 `reuseExistingServer: false` on the backend and a hand-started one collides with it.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/e2e/ai-mode.spec.ts
@@ -1552,7 +1552,7 @@ the diff reads as one decision.
 
 **Adds 0 tests.**
 
-- [ ] **Step 1: MVP scope**
+- [x] **Step 1: MVP scope**
 
 In the bullet list under `### MVP scope`, after the AI match bullet, add:
 
@@ -1560,7 +1560,7 @@ In the bullet list under `### MVP scope`, after the AI match bullet, add:
 - A tailored CV for the advert, written from it and the profile, as plain text (optional)
 ```
 
-- [ ] **Step 2: Screens**
+- [x] **Step 2: Screens**
 
 In screen 3, `Application detail`, add to the end of the first sentence's list, after "the pasted
 advert in a collapsed block": ", the tailored CV with a copy button". Then add after
@@ -1579,7 +1579,7 @@ saving.", add:
    other, and neither writes anything until the form is submitted.
 ```
 
-- [ ] **Step 3: The API table**
+- [x] **Step 3: The API table**
 
 Add two rows, each next to the route it mirrors - the application one after
 `/applications/{id}/match`, and the job-ad one after `/job-ads/analyse`:
@@ -1597,7 +1597,7 @@ sentence:
 the application is written, and a CV the user does not save leaves no trace.
 ```
 
-- [ ] **Step 4: The schema block**
+- [x] **Step 4: The schema block**
 
 In the `applications` table, after `match_weaknesses`:
 
@@ -1605,7 +1605,7 @@ In the `applications` table, after `match_weaknesses`:
   resume       text        null        -- the tailored CV, written by AI only
 ```
 
-- [ ] **Step 5: Testing focus**
+- [x] **Step 5: Testing focus**
 
 Under **pytest**, after the existing enricher bullet, add:
 
@@ -1630,7 +1630,7 @@ writing a CV on the create form and finding it on the saved application, writing
 screen, and the refusal when the profile is empty
 ```
 
-- [ ] **Step 6: Deferred decisions**
+- [x] **Step 6: Deferred decisions**
 
 Append these entries to the `## Deferred decisions` list:
 
@@ -1661,7 +1661,7 @@ Append these entries to the `## Deferred decisions` list:
   calls that are otherwise independent.
 ```
 
-- [ ] **Step 7: README**
+- [x] **Step 7: README**
 
 In the paragraph beginning "`OPENAI_API_KEY` is needed for AI mode", extend the sentence so it ends:
 
@@ -1669,7 +1669,7 @@ In the paragraph beginning "`OPENAI_API_KEY` is needed for AI mode", extend the 
 ..., folds plain-English updates into that profile, and writes a one-page CV tailored to an advert.
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add AGENTS.md README.md

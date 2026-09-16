@@ -25,6 +25,7 @@ An application record holds:
 - The pasted job advert, when the record was created from one (optional)
 - An AI match rating (1-5, half points), a summary of at most 210 characters, and two lists of one
   to four short entries each - what matches well, and weaknesses (optional)
+- A one-page CV tailored to the advert, written from it and the profile, as plain text (optional)
 - A list of dated status updates
 
 ### Status updates are the source of truth
@@ -72,14 +73,18 @@ information the single spreadsheet value was compressing.
    the existing 26 rows are already `Rejected` or `Withdrawn`, and they should not be the first thing
    seen.
 3. **Application detail** - all fields, the job posting link, the AI match - its rating, its short
-   summary, and its strengths and weaknesses columns - the pasted advert in a collapsed block, and
-   the full status timeline in reverse chronological order.
+   summary, and its strengths and weaknesses columns - the pasted advert in a collapsed block, the
+   tailored CV with a copy button, and the full status timeline in reverse chronological order.
    Add a status update from here; correct or delete an existing one from a dialog on the same screen.
-   Re-score the match from here too, when an advert was stored.
+   Re-score the match from here too, when an advert was stored, and write the CV or write it again
+   for the same reason: the advert does not change, but the profile it is read against does.
 4. **Create / edit application** - one form. Creating requires an initial status and its date. An
    `AI mode` toggle on the create form takes a pasted job advert, fills the fields in from it, and
    scores the match, showing the same match block the detail screen does so the score can be read
-   before saving. Every field stays editable and nothing is written until the form is submitted.
+   before saving. A second button writes a tailored CV for the same advert and shows it in full, so
+   it can be read and copied before saving. The two are independent: either can be pressed without
+   the other, because the CV is written from the advert rather than from the extracted fields.
+   Every field stays editable and nothing is written until the form is submitted.
 5. **Profile** - one textarea holding the candidate's background, reached from the header. AI mode
    scores adverts against it. Empty until written, which is a supported state, not an error.
    An `AI mode` switch sits above it, off by default, which is manual mode: the textarea is edited
@@ -98,12 +103,14 @@ Delete is available from the detail screen and cascades to that application's up
 
 Do not build these. They are candidates for later increments, listed so they are not mistaken for
 oversights: search, filtering beyond `Hide closed`, sorting by other columns, kanban or pipeline
-board, follow-up reminders, CV/cover-letter attachments and versioning, statistics or charts, CSV
+board, follow-up reminders, CV and cover-letter file attachments, CV versioning or history,
+statistics or charts, CSV
 export, in-app CSV import, email or LinkedIn integration, multi-user support, salary tracking,
 contact/recruiter records, tags.
 
-AI mode extracts fields from a pasted advert and scores the match. It does not fetch a URL, write
-cover letters, or suggest what to apply to next.
+AI mode extracts fields from a pasted advert, scores the match, and writes a CV tailored to it. It
+does not fetch a URL, write cover letters, or suggest what to apply to next. The CV it writes is one
+current plain-text document per application, not a file and not a history.
 
 ### Data migration
 
@@ -206,7 +213,9 @@ the filter runs in SQL rather than dropping rows client-side.
 | `PATCH`  | `/applications/{id}/status-updates/{update_id}` | Edit one timeline entry                         |
 | `DELETE` | `/applications/{id}/status-updates/{update_id}` | Delete one entry, never the last                |
 | `POST`   | `/applications/{id}/match`                     | Re-score a stored advert against the profile     |
+| `POST`   | `/applications/{id}/resume`                    | Re-write a stored advert into a tailored CV      |
 | `POST`   | `/job-ads/analyse`                             | Extract fields and score one pasted advert       |
+| `POST`   | `/job-ads/resume`                              | Write a tailored CV for one pasted advert        |
 | `GET`    | `/profile`                                     | Read the candidate profile                       |
 | `PUT`    | `/profile`                                     | Replace the candidate profile                    |
 | `POST`   | `/profile/enrich`                              | Fold a plain-English update into a profile       |
@@ -218,6 +227,11 @@ current status is derived from the timeline, so an empty one has nothing to deri
 `/profile/enrich` reads and writes no row. It is handed the text the editor currently holds, not the
 stored profile, so a second instruction builds on a draft nobody has saved yet, and a rewrite the
 user rejects leaves no trace.
+
+`/job-ads/resume` stores nothing either. The CV belongs to the create form until the application is
+written, so one the user does not save leaves no trace. Both CV routes refuse an empty profile with
+a `409` rather than answering, because a CV is assembled out of the profile and an empty one has
+nothing to assemble from - unlike a match, where a missing score is a state the screen can render.
 
 ### Types across the boundary
 
@@ -242,6 +256,7 @@ applications
   match_summary text       null        -- at most 210 characters, justifying match_rating
   match_strengths  text[]  null        -- up to four short entries: what fits
   match_weaknesses text[]  null        -- up to four short entries: what does not
+  resume       text        null        -- the tailored CV, written by AI only
   created_at   timestamptz not null default now()
   updated_at   timestamptz not null
 
@@ -419,6 +434,11 @@ Nearly all the tricky logic now lives in Python, so nearly all the unit tests do
 - What the enricher is handed: the text from the request body and the instruction, with the same
   recorder treatment. That the enrich call stores nothing, and that an empty profile is enriched
   into a first version rather than refused
+- What the CV writer is handed: the pasted advert and the stored profile, through the same recorder
+  seam. That `/job-ads/resume` stores nothing, that both CV routes refuse an empty profile before
+  the model is reached, and that a refusal leaves a CV already stored alone
+- That `ApplicationPatch` cannot write `resume` either, and that re-writing replaces the stored CV
+  wholesale rather than appending to it
 
 **Vitest** - only where real logic exists on the frontend: status-to-colour mapping, date
 formatting, the profile diff, and the changes derived from it. The diff's own test asserts an
@@ -428,15 +448,18 @@ renders. The changes test asserts the same way round - that slicing the draft by
 returns the added text, that reverting a change gives the saved profile back, and that putting a
 dropped line back restores it exactly - because those offsets drive a selection, a deletion and an
 insertion into the user's own document, and an off-by-one corrupts it quietly rather than failing
-loudly. Render-only components do not need tests written to reach a coverage number. The suite runs
-in a timezone pinned in `vitest.config.mts`, west of UTC, so the date helpers are exercised where
-local and UTC actually differ. Do not set `TZ` inside a test: Node keeps the last zone it read, so
-the change leaks into every later test in the file and cannot be undone.
+loudly. Render-only components do not need tests written to reach a coverage number, which is why
+the tailored CV adds nothing here: a string arrives, is painted into a `<pre>`, and is copied.
+The suite runs in a timezone pinned in `vitest.config.mts`, west of UTC, so the date helpers are
+exercised where local and UTC actually differ. Do not set `TZ` inside a test: Node keeps the last
+zone it read, so the change leaks into every later test in the file and cannot be undone.
 
 **Playwright** - login, create an application with its first status update, add a second update and
 see the current status change, correct and delete a timeline entry, `Hide closed` toggle behaviour,
 edit, delete, and AI mode with the analyser stubbed, and the profile's AI mode - a rewrite reviewed
-as a diff, a hand edit re-diffing it, and Discard. Runs against both services, which means the
+as a diff, a hand edit re-diffing it, and Discard. For the CV: writing one on the create form and
+finding it on the saved application, writing one from the detail screen, and the refusal when the
+profile is empty. Runs against both services, which means the
 suite starts two processes. The database is emptied once at the start and once at the end, not
 between tests, so an assertion that could match another test's record needs scoping to its own row.
 
@@ -544,6 +567,42 @@ rediscovered:
 - **This one field does not use the shadcn `Textarea`.** It sets `field-sizing-content`, which
   resizes the box as you type and leaves the mirror behind. The look is kept by sharing the classes
   that matter.
+- **The CV is written from the profile alone.** There is no separate CV source document, so the
+  profile is expected to hold the whole career bank - roles, dates, metrics, positioning - rather
+  than a paragraph. That makes the profile large, and every match call ships it too. A second
+  document read only by the CV writer is the fix if the profile becomes unwieldy to edit.
+- **The CV is AI-owned and read-only**, exactly like the match. `ApplicationCreate` accepts `resume`
+  and `ApplicationPatch` has no field for it, so a CV can only be replaced by writing it again,
+  never corrected in place. The user copies it out and edits it wherever they keep their resume,
+  which is what they were doing before this existed.
+- **One page is a budget in the prompt, not a measurement.** The model cannot see a page, so the
+  prompt states character ceilings per section and nothing in Python counts them. Same trade as the
+  210-character match summary, and the same fix if it turns out to matter: clamp in `app/ai.py`.
+  Measured twice on a 58k-character profile, the model came back at 382 and 423 characters against
+  a 510 ceiling, so the ceilings are not currently the binding constraint.
+- **The CV is written in the advert's language.** A French advert produces a French CV, which means
+  the model translates the candidate's own material. Chosen because that is the document that
+  actually gets sent; the cost is that wording the user approved in one language is re-rendered in
+  another without review. An advert pasted from LinkedIn arrives wrapped in the interface's own
+  language, which is not always the advert's - the prompt says the advert, and in testing the model
+  read through French chrome to an English posting correctly.
+- **The CV prompt assigns a role; the other two do not.** `RESUME_SYSTEM` casts the model as a
+  technical recruiter who screens and writes engineering CVs, following RISEN. `SYSTEM` and
+  `ENRICH_SYSTEM` describe a function instead, because extraction and additive editing are
+  mechanical, while choosing what earns space on one page and cutting the rest is a judgement.
+- **A CV written on the create form may store CRLF line endings.** It rides a hidden form field,
+  the same path `comment` and `job_ad` take, while one written from the detail screen arrives as LF.
+  Nothing diffs a CV, so neither is normalised.
+- **Copy is the whole delivery.** No download, no `.docx`, no PDF. The CV is plain text because the
+  next step is always a paste into a document that already carries the formatting.
+- **The CV call does not see the match.** It is handed the advert and the profile only, so a CV can
+  be written for an application that was never scored and re-writing one has no ordering
+  constraint. Feeding it the strengths and weaknesses would steer it, at the cost of coupling two
+  calls that are otherwise independent.
+- **`maxDuration` is left at the platform default.** The CV call measures 64.7s against a
+  58k-character profile, and Fluid Compute gives every plan 300s by default, so there is nothing to
+  raise. If the profile grows enough to approach that, the ceiling is per-function on the Python
+  entrypoint and on the two Next route segments that host the actions.
 - **Profile text is stored LF-normalised.** A form serialises a textarea as CRLF while the same
   textarea's DOM value reads back LF, so the two differ at every line break the moment a draft is
   hand-edited, and the diff panel marked every one of them as removed and re-added. Both boundaries
