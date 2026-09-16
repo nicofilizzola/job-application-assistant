@@ -58,7 +58,7 @@ Technical, reversible, and flagged so they can be revisited rather than rediscov
 | The two buttons are independent, not sequenced                    | Both are enabled as soon as the advert box has text. Requiring `Fill the form` first would add a state machine to buy nothing: the CV call reads the advert, not the extracted fields                                                                                   |
 | The stub echoes the first 60 characters of the advert             | `stub_tailor` returns a fixed document plus the advert's opening, so the end-to-end suite proves the paste reached the backend rather than only that some text came back. `stub_enrich` echoes the instruction for the same reason                                       |
 | No Vitest tests are added                                         | Nothing new on the frontend is logic. The CV is a string that arrives, is painted into a `<pre>`, and is copied. `AGENTS.md` is explicit that render-only components do not get tests written to reach a coverage number                                                 |
-| `maxDuration` is raised on both services                          | A one-page generation against a large profile is a far longer call than a four-field extraction. It only bites in production, where the local suites cannot see it, so it is set deliberately rather than discovered                                                    |
+| `maxDuration` is left alone                                       | Planned as a change, then measured and dropped. With Fluid Compute 300s is the default on every plan and the maximum on Hobby, and the slow case - a 58k-character profile in, a full page out - measures 64.7s. Configuring a value equal to the default is the defensive configuration the spec rules out |
 | A CV written on the create form may reach the database as CRLF    | It rides a hidden form field, the same path `comment` and `job_ad` take. Nothing diffs a CV, so it is not normalised, consistent with the rule already in `AGENTS.md`                                                                                                   |
 | The CV prompt opens with a role, the other two do not             | Following RISEN, `RESUME_SYSTEM` casts the model as a technical recruiter who screens and writes engineering CVs. `SYSTEM` and `ENRICH_SYSTEM` describe a function instead, and stay as they are: extraction and additive editing are mechanical, while selecting what belongs on a one-page CV and cutting the rest is a judgement, and a judgement needs someone qualified to make it |
 
@@ -124,7 +124,6 @@ Copied from `AGENTS.md`. Every task's requirements implicitly include these.
 | `backend/tests/test_ai.py`                        | Modify: two tests for the stub tailor                                                |
 | `backend/tests/test_applications.py`              | Modify: three column tests, the route inventory, the auth parametrize list           |
 | `backend/openapi.json`                            | Regenerate                                                                           |
-| `backend/vercel.json`                             | Modify: `maxDuration`                                                                |
 | `frontend/src/lib/api-types.ts`                   | Regenerate                                                                           |
 | `frontend/src/lib/api.ts`                         | Modify: `tailorResume`, `writeResume`, the `ResumeDraft` type                        |
 | `frontend/src/app/applications/actions.ts`        | Modify: `tailorResumeAction`, `writeResumeAction`, `resume` in `readAiFields`        |
@@ -132,8 +131,7 @@ Copied from `AGENTS.md`. Every task's requirements implicitly include these.
 | `frontend/src/components/job-ad-analyser.tsx`     | Modify: the second button and its own pending state                                  |
 | `frontend/src/components/application-form.tsx`    | Modify: the CV state, the panel, the hidden field                                    |
 | `frontend/src/components/write-resume-button.tsx` | Create: the detail screen's write and re-write button                                |
-| `frontend/src/app/applications/[id]/page.tsx`     | Modify: the panel, the button, `maxDuration`                                         |
-| `frontend/src/app/applications/new/page.tsx`      | Modify: `maxDuration`                                                                |
+| `frontend/src/app/applications/[id]/page.tsx`     | Modify: the panel and the button                                                     |
 | `frontend/e2e/ai-mode.spec.ts`                    | Modify: three end-to-end tests                                                       |
 | `AGENTS.md`                                       | Modify: scope, screens, API table, schema, testing focus, deferred decisions         |
 | `README.md`                                       | Modify: one sentence on what the OpenAI key now buys                                 |
@@ -1485,82 +1483,57 @@ git commit -m "Cover the tailored CV end to end"
 
 ---
 
-### Task 9: Function duration
+### Task 9: Function duration - NOT NEEDED
 
-A four-field extraction returns in seconds. A one-page document written against a full career
-profile does not, and the difference only shows up in production, where the local suites cannot see
-it. Set it rather than discover it.
+Kept in the plan rather than deleted, because "we checked and there was nothing to do" is worth
+more to the next reader than a task that quietly disappeared.
 
-**Files:**
+**Files:** none, after the finding below. One line of copy changed in
+`frontend/src/components/job-ad-analyser.tsx`.
 
-- Modify: `backend/vercel.json`
-- Modify: `frontend/src/app/applications/new/page.tsx`
-- Modify: `frontend/src/app/applications/[id]/page.tsx`
+**Adds 0 tests.**
 
-**Interfaces:** none. Nothing imports anything here.
+- [x] **Step 1: Confirm the limit the plan assumed had to be raised**
 
-**Adds 0 tests.** Neither local suite runs on Vercel, so this is verified on a preview deployment.
+The premise was wrong. With Fluid Compute, which is the default, **300s is both the default and the
+maximum on Hobby, and the default on Pro and Enterprise**. There is no headroom to raise on Hobby
+and nothing to raise anywhere, because nothing here asks for more than 300s. The stale 10s and 60s
+numbers that make this look necessary predate Fluid Compute.
 
-- [ ] **Step 1: Confirm the limit your Vercel plan allows**
+- [x] **Step 2: Measure the call rather than guess at it**
 
-Read the current ceiling before picking a number - it differs by plan and it has moved. The
-`vercel:vercel-functions` skill covers it, and `vercel.json` is schema-validated at build time, so a
-value the plan will not allow fails the build with a message naming the limit rather than shipping
-something that times out.
-
-- [ ] **Step 2: Raise it on the backend**
-
-`backend/vercel.json`:
-
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "fastapi",
-  "functions": {
-    "app/main.py": {
-      "maxDuration": 300
-    }
-  }
-}
-```
-
-If the build reports that the pattern matched no function, the entrypoint is resolved from
-`[tool.vercel] entrypoint = "app.main:app"` in `pyproject.toml`; check the build log for the path
-Vercel actually bundled and use that as the key.
-
-- [ ] **Step 3: Raise it on the two Next routes that invoke the actions**
-
-A Server Action runs inside the function of the route that invoked it, so the export goes on the
-pages, not on `actions.ts`. Add at the top of `frontend/src/app/applications/new/page.tsx`, below
-the imports:
-
-```tsx
-// A CV is a long generation. The Server Action runs inside this route's function, so the ceiling
-// has to be raised here and not where the action is defined.
-export const maxDuration = 300;
-```
-
-and the same two lines in `frontend/src/app/applications/[id]/page.tsx`, which hosts
-`writeResumeAction` and `scoreMatchAction`.
-
-- [ ] **Step 4: Verify on a preview**
-
-Push the branch. The pipeline deploys nothing off `main`, so deploy the two previews by hand and
-write a CV through the preview frontend against a real advert:
+Run, from `backend/`, against the real profile and a real advert:
 
 ```bash
-vercel deploy --project job-application-assistant-api
-vercel deploy --project job-application-assistant
+uv run python -c "
+import pathlib, time
+from sqlalchemy import text
+from app.ai import tailor
+from app.db import engine
+with engine.connect() as c:
+    profile = c.execute(text('select content from profile where id = 1')).scalar()
+advert = pathlib.Path('../local-testing/JOB.md').read_text(encoding='utf-8')
+start = time.perf_counter()
+tailor(advert, profile)
+print(f'{time.perf_counter() - start:.1f}s')
+"
 ```
 
-Expected: the CV comes back rather than a 504. If it still times out, the ceiling that bit is the
-one on whichever service logged the timeout - read the log before changing both.
+Measured on 16 Sep 2026: **64.7s**, from a 57,726-character profile to a 3,262-character CV. That is
+the slow case - the profile is the whole career pack and the output is a full page - and it leaves
+more than four minutes of headroom against the 300s floor. Setting `maxDuration` to a value equal to
+the default is exactly the defensive configuration `AGENTS.md` rules out.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 3: Fix the one thing the measurement did invalidate**
+
+The spinner read `This takes up to a minute.`, which a 65s call makes optimistic. It now reads
+`This takes about a minute.` Change it back if the model gets faster.
+
+- [x] **Step 4: Commit**
 
 ```bash
-git add backend/vercel.json "frontend/src/app/applications/new/page.tsx" "frontend/src/app/applications/[id]/page.tsx"
-git commit -m "Give the CV call room to finish"
+git add frontend/src/components/job-ad-analyser.tsx .agents/plans/16-09-2026-tailored-resume.md
+git commit -m "Say how long the CV call actually takes"
 ```
 
 ---

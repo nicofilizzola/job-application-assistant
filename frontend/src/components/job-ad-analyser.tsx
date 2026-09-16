@@ -92,7 +92,8 @@ export function JobAdAnalyser({
             </Button>
             {busy && (
               <p role="status" className="text-sm text-muted-foreground">
-                {writing ? "This takes up to a minute." : "This takes a few seconds."}
+                {/* Measured at 65s against a 58k-character profile, so not "up to a minute". */}
+                {writing ? "This takes about a minute." : "This takes a few seconds."}
               </p>
             )}
           </div>
