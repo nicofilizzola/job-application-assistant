@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.ai import get_analyser, get_enricher
+from app.ai import get_analyser, get_enricher, get_tailor
 from app.config import settings
 from app.db import get_session
 from app.main import app
@@ -135,6 +135,24 @@ def stub_enricher():
 
     yield _install
     app.dependency_overrides.pop(get_enricher, None)
+
+
+@pytest.fixture
+def stub_tailor():
+    """Swaps the OpenAI call for a recorder, so tests can assert what the model was handed."""
+
+    calls: list[tuple[str, str]] = []
+
+    def _install(answer: str = "NICOLAS\n\nSUMMARY\nShips product.") -> list[tuple[str, str]]:
+        def tailor(ad_text: str, profile: str) -> str:
+            calls.append((ad_text, profile))
+            return answer
+
+        app.dependency_overrides[get_tailor] = lambda: tailor
+        return calls
+
+    yield _install
+    app.dependency_overrides.pop(get_tailor, None)
 
 
 @pytest.fixture

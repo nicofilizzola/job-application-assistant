@@ -61,6 +61,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{application_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write Resume
+         * @description Re-writes the stored advert into a CV against the current profile, which is the other half
+         *     of why the advert is stored at all.
+         */
+        post: operations["write_resume_applications__application_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{application_id}/status-updates": {
         parameters: {
             query?: never;
@@ -110,6 +131,27 @@ export interface paths {
          * @description Reads an advert. Stores nothing - the result is prefill, and the user has not agreed to it.
          */
         post: operations["analyse_job_ad_job_ads_analyse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/job-ads/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write Draft Resume
+         * @description Writes a CV for an advert with no application yet. Stores nothing: the create form carries
+         *     the draft in a hidden field and it is written with the application, or not at all.
+         */
+        post: operations["write_draft_resume_job_ads_resume_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -203,6 +245,8 @@ export interface components {
             match_strengths?: string[] | null;
             /** Match Weaknesses */
             match_weaknesses?: string[] | null;
+            /** Resume */
+            resume?: string | null;
         };
         /** ApplicationDetail */
         ApplicationDetail: {
@@ -235,6 +279,8 @@ export interface components {
             match_strengths: string[] | null;
             /** Match Weaknesses */
             match_weaknesses: string[] | null;
+            /** Resume */
+            resume: string | null;
             /**
              * Created At
              * Format: date-time
@@ -361,6 +407,15 @@ export interface components {
         };
         /** ProfileWrite */
         ProfileWrite: {
+            /** Content */
+            content: string;
+        };
+        /**
+         * ResumeDraft
+         * @description A tailored CV for an advert that has no application yet. Stored nowhere - the create form
+         *     carries it until the application is written.
+         */
+        ResumeDraft: {
             /** Content */
             content: string;
         };
@@ -633,6 +688,39 @@ export interface operations {
             };
         };
     };
+    write_resume_applications__application_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_status_update_applications__application_id__status_updates_post: {
         parameters: {
             query?: never;
@@ -762,6 +850,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAnalysis"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_draft_resume_job_ads_resume_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobAdText"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeDraft"];
                 };
             };
             /** @description Validation Error */

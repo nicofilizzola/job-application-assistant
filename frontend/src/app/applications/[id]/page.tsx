@@ -6,8 +6,10 @@ import { AppHeader } from "@/components/app-header";
 import { DeleteApplication } from "@/components/delete-application";
 import { EditUpdateDialog } from "@/components/edit-update-dialog";
 import { MatchPanel } from "@/components/match-panel";
+import { ResumePanel } from "@/components/resume-panel";
 import { ScoreMatchButton } from "@/components/score-match-button";
 import { StatusBadge } from "@/components/status-badge";
+import { WriteResumeButton } from "@/components/write-resume-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError, getApplication } from "@/lib/api";
@@ -96,13 +98,19 @@ export default async function ApplicationPage({ params }: PageProps<"/applicatio
           </details>
         )}
 
+        {application.resume && <ResumePanel resume={application.resume} />}
+
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href={`/applications/${application.id}/edit`}>Edit</Link>
           </Button>
           <DeleteApplication id={application.id} title={application.title} />
+          {/* Both need the stored advert to work from, so neither is offered without it. */}
           {application.job_ad && (
-            <ScoreMatchButton id={application.id} scored={application.match_rating != null} />
+            <>
+              <ScoreMatchButton id={application.id} scored={application.match_rating != null} />
+              <WriteResumeButton id={application.id} written={application.resume != null} />
+            </>
           )}
         </div>
 

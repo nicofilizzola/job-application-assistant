@@ -14,6 +14,8 @@ import {
   patchApplication,
   patchStatusUpdate,
   scoreMatch,
+  tailorResume,
+  writeResume,
   type JobAnalysis,
 } from "@/lib/api";
 import { STATUSES, type Status } from "@/lib/status";
@@ -79,6 +81,7 @@ function readAiFields(formData: FormData) {
     match_summary: optional(formData, "match_summary"),
     match_strengths: optionalList(formData, "match_strengths"),
     match_weaknesses: optionalList(formData, "match_weaknesses"),
+    resume: optional(formData, "resume"),
   };
 }
 
@@ -188,6 +191,39 @@ export async function scoreMatchAction(id: string): Promise<{ error?: string }> 
       return { error: "Fill in your profile first, on the Profile screen." };
     }
     return { error: "Scoring failed. Try again." };
+  }
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export type ResumeState = { resume?: string; error?: string };
+
+/** Writes a CV for an advert that has no application yet. It stores nothing, so unlike every other
+ *  action here it must not revalidate. */
+export async function tailorResumeAction(text: string): Promise<ResumeState> {
+  if (!text.trim()) return { error: "Paste the job advert first" };
+  try {
+    return { resume: (await tailorResume(text)).content };
+  } catch (error) {
+    console.error(error);
+    if (error instanceof ApiError && error.status === 409) {
+      return { error: "Fill in your profile first, on the Profile screen." };
+    }
+    return { error: "The CV could not be written. Try again." };
+  }
+}
+
+export async function writeResumeAction(id: string): Promise<{ error?: string }> {
+  try {
+    await writeResume(id);
+  } catch (error) {
+    console.error(error);
+    // The route's other 409 - no stored advert - cannot reach this message, because the button is
+    // only rendered when there is one. scoreMatchAction makes the same trade.
+    if (error instanceof ApiError && error.status === 409) {
+      return { error: "Fill in your profile first, on the Profile screen." };
+    }
+    return { error: "The CV could not be written. Try again." };
   }
   revalidatePath("/", "layout");
   return {};

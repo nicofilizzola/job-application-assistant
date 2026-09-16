@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.ai import EnricherDep
@@ -18,6 +18,15 @@ def load_content(session: Session) -> str:
     """The profile as plain text, empty until it has been written for the first time."""
     profile = session.get(Profile, PROFILE_ID)
     return profile.content if profile else ""
+
+
+def require_profile(session: Session) -> str:
+    """A CV is assembled out of the profile, so an empty one has nothing to assemble from.
+    Scoring refuses for a different reason - writing nulls would erase a score already earned."""
+    profile = load_content(session)
+    if not profile.strip():
+        raise HTTPException(status.HTTP_409_CONFLICT, "The candidate profile is empty")
+    return profile
 
 
 @router.get("", response_model=ProfileRead)

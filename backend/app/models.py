@@ -30,6 +30,9 @@ class Application(Base):
     # never reach the database.
     match_strengths: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
     match_weaknesses: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
+    # The tailored CV. Written by AI mode and by the re-write route, never by a hand edit, for the
+    # same reason the match fields are not on ApplicationPatch.
+    resume: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

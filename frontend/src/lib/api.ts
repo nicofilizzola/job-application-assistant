@@ -12,6 +12,7 @@ export type StatusUpdateRead = components["schemas"]["StatusUpdateRead"];
 export type JobAnalysis = components["schemas"]["JobAnalysis"];
 export type Profile = components["schemas"]["ProfileRead"];
 export type ProfileDraft = components["schemas"]["ProfileDraft"];
+export type ResumeDraft = components["schemas"]["ResumeDraft"];
 
 export class ApiError extends Error {
   constructor(
@@ -114,4 +115,12 @@ export function analyseJobAd(text: string) {
 
 export function scoreMatch(id: string) {
   return call<ApplicationDetail>(`/applications/${id}/match`, { method: "POST" });
+}
+
+export function tailorResume(text: string) {
+  return call<ResumeDraft>("/job-ads/resume", { method: "POST", body: JSON.stringify({ text }) });
+}
+
+export function writeResume(id: string) {
+  return call<ApplicationDetail>(`/applications/${id}/resume`, { method: "POST" });
 }

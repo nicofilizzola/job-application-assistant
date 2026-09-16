@@ -52,10 +52,12 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("/applications/{application_id}/status-updates/{update_id}", "PATCH"),
         ("/applications/{application_id}/status-updates/{update_id}", "DELETE"),
         ("/applications/{application_id}/match", "POST"),
+        ("/applications/{application_id}/resume", "POST"),
         ("/profile", "GET"),
         ("/profile", "PUT"),
         ("/profile/enrich", "POST"),
         ("/job-ads/analyse", "POST"),
+        ("/job-ads/resume", "POST"),
     }
 
 
@@ -71,10 +73,12 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("PATCH", "/applications/{id}/status-updates/{update_id}"),
         ("DELETE", "/applications/{id}/status-updates/{update_id}"),
         ("POST", "/applications/{id}/match"),
+        ("POST", "/applications/{id}/resume"),
         ("GET", "/profile"),
         ("PUT", "/profile"),
         ("POST", "/profile/enrich"),
         ("POST", "/job-ads/analyse"),
+        ("POST", "/job-ads/resume"),
     ],
 )
 async def test_every_application_route_requires_the_api_key(anonymous_client, method, path):
@@ -545,6 +549,34 @@ async def test_patch_cannot_touch_the_ai_fields(client):
     assert body["match_summary"] == "Original."
     assert body["match_strengths"] == ["Original strength"]
     assert body["match_weaknesses"] == ["Original weakness"]
+
+
+async def test_create_stores_the_resume_it_was_given(client):
+    application_id = await create(client, resume="NICOLAS\n\nSUMMARY\nShips product.")
+
+    detail = (await client.get(f"/applications/{application_id}")).json()
+    assert detail["resume"] == "NICOLAS\n\nSUMMARY\nShips product."
+
+
+async def test_an_application_created_by_hand_has_no_resume(client):
+    application_id = await create(client)
+
+    assert (await client.get(f"/applications/{application_id}")).json()["resume"] is None
+
+
+async def test_patch_cannot_touch_the_resume(client):
+    """The CV is AI-owned, exactly like the match: ApplicationPatch has no field for it, so a hand
+    edit that sends one is ignored rather than honoured."""
+    application_id = await create(client, resume="Original CV.")
+
+    response = await client.patch(
+        f"/applications/{application_id}", json={"title": "Renamed", "resume": "Talked up."}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "Renamed"
+    assert body["resume"] == "Original CV."
 
 
 async def test_the_list_carries_the_match_rating(client):
