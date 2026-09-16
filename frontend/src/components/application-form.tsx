@@ -7,6 +7,7 @@ import type { FormState } from "@/app/applications/actions";
 import { Field, selectClasses } from "@/components/field";
 import { JobAdAnalyser } from "@/components/job-ad-analyser";
 import { MatchPanel } from "@/components/match-panel";
+import { ResumePanel } from "@/components/resume-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +30,9 @@ export function ApplicationForm({
   const [prefill, setPrefill] = useState<{ analysis: JobAnalysis; adText: string } | null>(null);
   // The form is uncontrolled, so a new analysis only reaches the inputs by remounting them.
   const [prefillKey, setPrefillKey] = useState(0);
+  // Independent of prefill: the CV can be written without ever pressing "Fill the form", and it
+  // survives a re-analysis, which remounts the form but not this component.
+  const [resume, setResume] = useState<string | null>(null);
   const errors = state.errors ?? {};
   const creating = application === undefined;
   const analysis = prefill?.analysis;
@@ -40,7 +44,7 @@ export function ApplicationForm({
 
   return (
     <div className="space-y-6">
-      {creating && <JobAdAnalyser onAnalysed={applyAnalysis} />}
+      {creating && <JobAdAnalyser onAnalysed={applyAnalysis} onTailored={setResume} />}
 
       {analysis?.match_rating != null && (
         <MatchPanel
@@ -50,6 +54,8 @@ export function ApplicationForm({
           weaknesses={analysis.match_weaknesses}
         />
       )}
+
+      {resume && <ResumePanel resume={resume} />}
 
       <form key={prefillKey} action={submit} className="space-y-6">
         <div className="grid gap-6 sm:grid-cols-2">
@@ -152,6 +158,9 @@ export function ApplicationForm({
             ))}
           </>
         )}
+
+        {/* Its own conditional, not part of the block above: a CV can exist with no analysis. */}
+        {resume && <input type="hidden" name="resume" value={resume} />}
 
         <div className="flex gap-3">
           <Button type="submit" disabled={pending}>
