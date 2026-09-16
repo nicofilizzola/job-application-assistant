@@ -85,13 +85,12 @@ information the single spreadsheet value was compressing.
    An `AI mode` switch sits above it, off by default, which is manual mode: the textarea is edited
    directly, exactly as before. Switched on, it locks the textarea and takes a plain-English update
    instead ("I finished the AWS course"), then shows the rewritten profile as a diff over the saved
-   one. The diff shows only the changed lines, each with a line of context and labelled with the
-   heading it sits under, since a rewrite leaves a long profile almost untouched and the question
-   being asked is where the update landed. What is left out is counted rather than rendered, and one
-   click shows the whole profile instead. Clicking a change selects it in the textarea, so
-   correcting an addition does not mean hunting for it. The draft stays editable while it is being
-   reviewed and the diff follows the edit, so a hand correction is shown in the same terms the
-   rewrite was. Nothing is written until `Save profile`.
+   one. The rewrite is shown in the box itself: additions highlighted in place, editable where they
+   sit, so correcting one is not a matter of finding it twice. Above the box an index names each
+   change and the heading it landed under, scrolls and selects it on click, and can undo that change
+   alone. Text the rewrite dropped is no longer in the document, so it is listed under the box
+   instead, struck through and restorable. Manual mode uses the same box, highlighting unsaved edits
+   against the saved profile. Nothing is written until `Save profile`.
 
 Delete is available from the detail screen and cascades to that application's updates.
 
@@ -422,16 +421,17 @@ Nearly all the tricky logic now lives in Python, so nearly all the unit tests do
   into a first version rather than refused
 
 **Vitest** - only where real logic exists on the frontend: status-to-colour mapping, date
-formatting, the profile diff, and its grouping into hunks. The diff's own test asserts an invariant
-rather than a rendering: dropping the removed pieces has to give the draft back exactly, and
-dropping the added ones the saved profile, since those pieces are the whole document the panel
-renders. The hunk test asserts the same way round - that slicing the draft by a hunk's offsets
-returns the added text - because those offsets are what a click hands the textarea, and an
-off-by-one there selects the wrong words rather than failing loudly. Render-only components
-do not need tests written to reach a coverage number. The suite runs in a timezone pinned in
-`vitest.config.mts`, west of UTC, so the date helpers are exercised where local and UTC actually
-differ. Do not set `TZ` inside a test: Node keeps the last zone it read, so the change leaks into
-every later test in the file and cannot be undone.
+formatting, the profile diff, and the changes derived from it. The diff's own test asserts an
+invariant rather than a rendering: dropping the removed pieces has to give the draft back exactly,
+and dropping the added ones the saved profile, since those pieces are the whole document the panel
+renders. The changes test asserts the same way round - that slicing the draft by a change's offsets
+returns the added text, that reverting a change gives the saved profile back, and that putting a
+dropped line back restores it exactly - because those offsets drive a selection, a deletion and an
+insertion into the user's own document, and an off-by-one corrupts it quietly rather than failing
+loudly. Render-only components do not need tests written to reach a coverage number. The suite runs
+in a timezone pinned in `vitest.config.mts`, west of UTC, so the date helpers are exercised where
+local and UTC actually differ. Do not set `TZ` inside a test: Node keeps the last zone it read, so
+the change leaks into every later test in the file and cannot be undone.
 
 **Playwright** - login, create an application with its first status update, add a second update and
 see the current status change, correct and delete a timeline entry, `Hide closed` toggle behaviour,
@@ -532,13 +532,18 @@ rediscovered:
   does not need an audit trail, and the diff already shows what a save is about to do.
 - **The rewrite is one call and no retry.** A model that answers with a preamble or a code fence
   produces a diff full of noise, which the user can see and discard. Nothing strips it.
-- **A collapsed run of unchanged lines expands to the whole profile, not to itself.** Clicking
-  `... N unchanged lines ...` switches the panel to the full document rather than revealing that one
-  gap, which would need its own state and a second code path. The counted lines are never the ones
-  under review, so the cheap version loses nothing.
-- **The diff marks changes inline rather than with a `+` gutter.** A gutter reads as "this whole
-  line is new", which is wrong for a word appended inside an existing line. `ins` and `del` carry it
-  instead, and they survive being read without colour.
+- **The box is a textarea with a mirror painted behind it, not a `contentEditable`.** Both layers
+  share one class string, so any divergence in font, padding, border or wrapping shows up as
+  highlights drifting off their words. The cost is that only text the box contains can be painted,
+  which is why dropped text is listed under the box rather than shown in place. The gain is a real
+  caret, real undo, real form submission and real screen-reader behaviour.
+- **A revert is not on the browser's undo stack.** `Undo` on a change replaces the box's value
+  through React state, so `ctrl+Z` will not step back over it. A revert is itself an undo, and the
+  alternative - driving edits through the deprecated `document.execCommand` to keep native history -
+  is not worth the fragility.
+- **This one field does not use the shadcn `Textarea`.** It sets `field-sizing-content`, which
+  resizes the box as you type and leaves the mirror behind. The look is kept by sharing the classes
+  that matter.
 - **Profile text is stored LF-normalised.** A form serialises a textarea as CRLF while the same
   textarea's DOM value reads back LF, so the two differ at every line break the moment a draft is
   hand-edited, and the diff panel marked every one of them as removed and re-added. Both boundaries

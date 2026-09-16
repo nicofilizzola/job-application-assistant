@@ -54,7 +54,8 @@ test("a rewrite is reviewed as a diff and saved from the box", async ({ page }) 
   await rewrite(page);
 
   const changes = page.getByRole("region", { name: "Changes" });
-  await expect(changes.locator("ins")).toContainText(ADDED);
+  // The panel is an index now, not a rendered document: the addition shows as one row's excerpt.
+  await expect(changes.getByText(/Added by the stub/)).toBeVisible();
   await expect(changes.getByText(/added, 0 removed/)).toBeVisible();
   // The whole draft is in the box, and the box is editable again.
   const box = page.getByLabel("Candidate profile");
@@ -82,8 +83,8 @@ test("hand-editing the draft re-diffs it and warns about what was dropped", asyn
   const changes = page.getByRole("region", { name: "Changes" });
   await expect(changes.locator("del")).toContainText("Python, FastAPI, Postgres");
   await expect(changes.getByText("A rewrite is meant to add only")).toBeVisible();
-  // The addition is still shown as an addition.
-  await expect(changes.locator("ins")).toContainText(ADDED);
+  // The addition is still indexed as its own change.
+  await expect(changes.getByText(/Added by the stub/)).toBeVisible();
 });
 
 test("Discard puts the saved profile back", async ({ page }) => {
@@ -98,31 +99,29 @@ test("Discard puts the saved profile back", async ({ page }) => {
   await expect(page.getByLabel("What to add")).toHaveValue("");
 });
 
-test("a long profile shows only the changed lines, until asked for the rest", async ({ page }) => {
+test("the index names each change and does not repeat the document", async ({ page }) => {
   await saveProfile(page, LONG);
   await rewrite(page);
 
   const changes = page.getByRole("region", { name: "Changes" });
-  // The change sits under the last heading, and that heading is what labels it.
+  // One row, naming the heading the addition landed under.
   await expect(changes.getByText("## Certifications")).toBeVisible();
-  await expect(changes.locator("ins")).toContainText(ADDED);
-  // Everything else is counted, not rendered.
-  await expect(changes.getByText(/unchanged lines/)).toBeVisible();
+  await expect(changes.getByText(/Added by the stub/)).toBeVisible();
+  await expect(changes.getByText(/1 change, .* added, 0 removed/)).toBeVisible();
+  // The panel is an index, not a second copy: untouched text appears nowhere in it.
   await expect(changes.getByText("Full stack engineer, six years, based in Paris.")).toBeHidden();
 
-  await changes.getByRole("button", { name: "Show whole profile" }).click();
-
-  await expect(changes.getByText("Full stack engineer, six years, based in Paris.")).toBeVisible();
-  await expect(changes.getByText(/unchanged lines/)).toBeHidden();
+  // The box holds the whole profile, with the addition in it.
+  await expect(page.getByLabel("Candidate profile")).toHaveValue(`${LONG}\n${ADDED}`);
 });
 
-test("clicking a change selects it in the editor", async ({ page }) => {
+test("clicking a change selects it in the box", async ({ page }) => {
   await saveProfile(page, LONG);
   await rewrite(page);
 
   await page
     .getByRole("region", { name: "Changes" })
-    .getByTitle("Edit this in the profile below")
+    .getByTitle("Edit this in the profile")
     .first()
     .click();
 
@@ -133,4 +132,89 @@ test("clicking a change selects it in the editor", async ({ page }) => {
     return area.value.slice(area.selectionStart, area.selectionEnd);
   });
   expect(selected).toContain("Added by the stub");
+});
+
+test("Undo removes one change and leaves the others", async ({ page }) => {
+  await saveProfile(page, LONG);
+  await rewrite(page);
+  // The second change has to be in a different section. Two additions on adjacent lines are one
+  // change - the grouping merges anything within a line of its neighbour - so appending next to the
+  // stub's line would leave nothing behind to assert on.
+  await page
+    .getByLabel("Candidate profile")
+    .fill(
+      `${LONG}\n${ADDED}`.replace(
+        "Contract work for two fintech startups.",
+        "Contract work for two fintech startups.\nMentor two juniors.",
+      ),
+    );
+
+  const changes = page.getByRole("region", { name: "Changes" });
+  await expect(changes.getByRole("button", { name: /^Undo/ })).toHaveCount(2);
+
+  // Rows run in document order, so the first is the hand-made one under `## Experience`.
+  await changes.getByRole("button", { name: /^Undo/ }).first().click();
+
+  // Exactly that change is gone, and the stub's addition is untouched.
+  await expect(page.getByLabel("Candidate profile")).toHaveValue(`${LONG}\n${ADDED}`);
+});
+
+test("dropped text is listed with its heading and can be put back", async ({ page }) => {
+  await saveProfile(page, LONG);
+  await rewrite(page);
+
+  // Drop a line by hand. It leaves the box, so it can only be shown in the list.
+  await page
+    .getByLabel("Candidate profile")
+    .fill(`${LONG}\n${ADDED}`.replace("Python, FastAPI, Postgres\n", ""));
+
+  const changes = page.getByRole("region", { name: "Changes" });
+  await expect(changes.locator("del")).toContainText("Python, FastAPI, Postgres");
+  await expect(changes.getByText("## Skills").first()).toBeVisible();
+
+  await changes.getByRole("button", { name: /^Put it back/ }).click();
+
+  await expect(page.getByLabel("Candidate profile")).toHaveValue(`${LONG}\n${ADDED}`);
+  await expect(changes.locator("del")).toHaveCount(0);
+});
+
+test("manual mode highlights unsaved edits in the same box", async ({ page }) => {
+  await saveProfile(page, LONG);
+
+  // No AI mode, no rewrite: just typing.
+  await page.getByLabel("Candidate profile").fill(`${LONG}\nMentor two juniors.`);
+
+  const changes = page.getByRole("region", { name: "Changes" });
+  await expect(changes.getByText(/Mentor two juniors/)).toBeVisible();
+  await expect(changes.getByText(/1 change/)).toBeVisible();
+});
+
+/** Sixty lines, so the box overflows and its scrollbar appears - the condition the wrapping bug
+ *  needed. */
+const OVERFLOWING = Array.from(
+  { length: 60 },
+  (_, index) => `Line ${index + 1}: shipped something worth mentioning here.`,
+).join("\n");
+
+test("both layers of the box wrap at the same width", async ({ page }) => {
+  await saveProfile(page, OVERFLOWING);
+  await rewrite(page);
+
+  // A scrollbar changes the content width. If the two layers ever disagree on it they wrap
+  // differently, and every highlight below the first differing line is painted a row out.
+  const metrics = await page.getByLabel("Candidate profile").evaluate((element) => {
+    const box = element as HTMLTextAreaElement;
+    const mirror = box.parentElement?.querySelector("[aria-hidden]") as HTMLElement;
+    return {
+      boxWidth: box.clientWidth,
+      mirrorWidth: mirror.clientWidth,
+      boxHeight: box.scrollHeight,
+      mirrorHeight: mirror.scrollHeight,
+    };
+  });
+
+  expect(metrics.mirrorWidth).toBe(metrics.boxWidth);
+  expect(metrics.mirrorHeight).toBe(metrics.boxHeight);
+  // The fixture has to actually overflow, or the assertions above prove nothing.
+  expect(metrics.boxHeight).toBeGreaterThan(600);
 });
