@@ -187,3 +187,113 @@ def get_enricher() -> Enricher:
 
 
 EnricherDep = Annotated[Enricher, Depends(get_enricher)]
+RESUME_SYSTEM = (
+    "You are a technical recruiter who has screened thousands of engineering CVs and now writes "
+    "them. You know what an applicant tracking system can parse, what a hiring manager takes in "
+    "during the six seconds before deciding whether to keep reading, and that the CV which earns "
+    "the call is the one answering the advert's requirements in the advert's own order. You are "
+    "given one job seeker's profile and one job advert, and you return a one-page resume "
+    "assembled from that profile alone. You select and cut from a source document. You never "
+    "write a career you were not given."
+)
+
+RESUME_TASK = """Write a one-page ATS resume for this advert, from the profile below. It has to
+survive an automated parse and then convince the person reading it that this candidate is worth a
+screening call, on evidence the profile already contains.
+
+Rules, most important first:
+
+1. Invent nothing. Every employer, title, date, technology, number and achievement must already be
+   in the profile. You may cut, reorder, shorten and reword. You may not add a fact, inflate a
+   number, promote exposure into experience, or name a tool the profile does not name. Where the
+   advert asks for something the profile does not show, leave it out - do not imply it and do not
+   hedge it into place.
+
+2. Tailor by choosing, not by adding. Read what the advert asks for, then lead with the profile's
+   material that answers it: pick the roles worth the space, put the matching bullets first, and
+   drop what this employer has no reason to care about. Where the profile and the advert mean the
+   same thing in different words, use the advert's words.
+
+3. Keep to this structure and these budgets exactly. The budgets are in characters, and they are
+   ceilings, not targets.
+
+   The candidate's name alone on the first line.
+   One headline line: the positioning the profile states, not a title invented for this advert.
+   One line of location, mobility and work authorisation. One line of contact details. Both only as
+   far as the profile states them - omit an item the profile does not give rather than writing a
+   placeholder for it.
+
+   SUMMARY - at most 510 characters. Three or four sentences, no bullets.
+
+   CORE SKILLS - at most 620 characters. Four to six groups, each on its own line, written as
+   "Group: item, item, item." Name the groups for what this advert cares about.
+
+   EXPERIENCE - four roles, most recent first, unless the profile holds fewer. Each opens with a
+   line reading "EMPLOYER - Title" and then a line reading "Location | Start - End". The single
+   most relevant role gets four bullets of at most 220 characters each. The other three get one
+   bullet of at most 220 characters each. Bullets open with "- ", start with a verb - past tense
+   for a role that has ended, present tense for the current one - and carry a number wherever the
+   profile gives one.
+
+   EDUCATION - at most two lines per qualification: school and degree, then location and years.
+
+   CERTIFICATIONS AND LANGUAGES - at most two lines in total.
+
+4. Write to be skimmed. Short declarative lines. No filler, no adjective doing a verb's job, no
+   "responsible for", no "proven track record", and never the same achievement in two sections.
+
+5. Write the whole resume in the language of the job advert, translating the profile's material
+   where the two differ. Do not leave one section in the profile's language.
+
+6. Return the resume text and nothing else. Plain text: no Markdown, no bold, no code fence, no
+   table, no column layout, no icon, no preamble, and no note about what you chose or why. Section
+   headings in capitals on their own line, spelled exactly as above.
+
+<candidate_profile>
+{profile}
+</candidate_profile>
+
+<job_advert>
+{ad_text}
+</job_advert>"""
+
+
+def tailor(ad_text: str, profile: str) -> str:
+    """The resume itself, as plain text. Like enrich, the answer is the document, so there is no
+    object to parse."""
+    response = client.responses.create(
+        model=settings.openai_model,
+        input=[
+            {"role": "system", "content": RESUME_SYSTEM},
+            {"role": "user", "content": RESUME_TASK.format(profile=profile, ad_text=ad_text)},
+        ],
+    )
+    return response.output_text.strip()
+
+
+STUB_RESUME = """NICOLAS STUB
+Stubbed Product Engineer
+
+SUMMARY
+A fixed resume, so the end-to-end suite never calls OpenAI.
+
+CORE SKILLS
+Stubbed: one, two."""
+
+
+def stub_tailor(ad_text: str, profile: str) -> str:
+    """Echoes the advert's opening, so the end-to-end suite proves the paste reached the model
+    rather than only that some text came back."""
+    return f"{STUB_RESUME}\n\nTAILORED FOR\n{ad_text[:60]}"
+
+
+Tailor = Callable[[str, str], str]
+
+
+def get_tailor() -> Tailor:
+    if settings.ai_stub:
+        return stub_tailor
+    return tailor
+
+
+TailorDep = Annotated[Tailor, Depends(get_tailor)]
