@@ -591,7 +591,9 @@ This task also extracts `require_profile`, because three callers now need "the p
 - Produces: `ResumeDraft(content: str)`; `require_profile(session: Session) -> str`; the route
   `POST /job-ads/resume`; the `stub_tailor` pytest fixture, which Task 5 also uses.
 
-**Adds 5 tests.**
+**Adds 6 tests:** five written below, plus one more collected from
+`test_every_application_route_requires_the_api_key`, which is parametrized - each row added to
+it is a test.
 
 - [ ] **Step 1: Add the recorder fixture**
 
@@ -623,11 +625,11 @@ where a test declares a parameter of that name, and `test_ai.py` imports the fun
 
 - [ ] **Step 2: Write the five failing tests**
 
-Create `backend/tests/test_resume.py`:
+Create `backend/tests/test_resume.py`. It imports nothing from the other test modules yet -
+Task 5 adds the `create` helper when its tests need an application to write onto, and importing
+it early is an unused import that `ruff` fails on:
 
 ```python
-from tests.test_applications import create
-
 ADVERT = "Full Stack Software Engineer - AI Finance Agent. Remote, Sweden."
 PROFILE = "Nicolas, full stack engineer. FastAPI, Angular, Neon."
 
@@ -656,8 +658,10 @@ async def test_a_draft_cv_stores_nothing(client, stub_tailor):
     stub_tailor()
     await client.put("/profile", json={"content": PROFILE})
 
-    await client.post("/job-ads/resume", json={"text": ADVERT})
+    response = await client.post("/job-ads/resume", json={"text": ADVERT})
 
+    # Asserted before the row count, or this passes while the route does not exist at all.
+    assert response.status_code == 200
     assert (await client.get("/applications?include_closed=true")).json() == []
 
 
@@ -682,7 +686,8 @@ async def test_a_draft_cv_rejects_an_empty_advert(client, stub_tailor):
 
 Run: `cd backend && uv run pytest tests/test_resume.py -v`
 Expected: 5 failed with `404`, because the route does not exist (the `422` case fails too - it gets
-a 404 rather than a 422).
+a 404 rather than a 422). The route inventory and the auth list fail as well once Step 6 lands,
+which is why Step 7 adds their rows in this task rather than the next one.
 
 - [ ] **Step 4: Add the response model**
 
@@ -749,7 +754,26 @@ def write_draft_resume(payload: JobAdText, session: SessionDep, tailor: TailorDe
     return ResumeDraft(content=tailor(payload.text, require_profile(session)))
 ```
 
-- [ ] **Step 7: Run the tests**
+- [ ] **Step 7: Declare the new route**
+
+Adding a route breaks `test_openapi_exposes_exactly_the_expected_routes`, which asserts on an
+exact set. In `backend/tests/test_applications.py`, add to that set:
+
+```python
+        ("/job-ads/resume", "POST"),
+```
+
+and to the parametrize list on `test_every_application_route_requires_the_api_key`:
+
+```python
+        ("POST", "/job-ads/resume"),
+```
+
+The auth test sends a body this route would reject as a 422. It never gets that far: the API key
+is checked by a router-level dependency, before the body is validated. `/job-ads/analyse` is
+already in that list for the same reason.
+
+- [ ] **Step 8: Run the tests**
 
 Run: `cd backend && uv run pytest tests/test_resume.py -v`
 Expected: PASS, 5 tests.
@@ -757,9 +781,9 @@ Expected: PASS, 5 tests.
 Then run the whole suite, because Step 5 touched `score_match`:
 
 Run: `cd backend && uv run pytest`
-Expected: PASS, baseline + 3 + 2 + 5.
+Expected: PASS, baseline + 3 + 2 + 6.
 
-- [ ] **Step 8: Regenerate the schema, lint, commit**
+- [ ] **Step 9: Regenerate the schema, lint, commit**
 
 ```bash
 cd backend && uv run python -m scripts.export_openapi
@@ -790,13 +814,15 @@ the same two conditions.
 - Produces: the route `POST /applications/{application_id}/resume`, returning `ApplicationDetail`.
   Task 7 calls it; Task 6 regenerates the types it produces.
 
-**Adds 6 tests:** four written below, plus two more collected from
-`test_every_application_route_requires_the_api_key`, which is parametrized - each row added to it is
-a test.
+**Adds 5 tests:** four written below, plus one more collected from
+`test_every_application_route_requires_the_api_key`, which is parametrized - each row added to it
+is a test.
 
 - [ ] **Step 1: Write the four failing tests**
 
-Append to `backend/tests/test_resume.py`, and add `import uuid` at the top of that file:
+Append to `backend/tests/test_resume.py`, and add `import uuid` plus
+`from tests.test_applications import create` at the top of that file - this is the first task
+whose tests need an application to write a CV onto:
 
 ```python
 async def test_writing_stores_the_cv_on_the_application(client, stub_tailor):
@@ -848,25 +874,21 @@ In `backend/tests/test_applications.py`, add to the set in
 
 ```python
         ("/applications/{application_id}/resume", "POST"),
-        ("/job-ads/resume", "POST"),
 ```
 
 and to the parametrize list on `test_every_application_route_requires_the_api_key`:
 
 ```python
         ("POST", "/applications/{id}/resume"),
-        ("POST", "/job-ads/resume"),
 ```
 
-The auth test sends a body that `/job-ads/resume` would reject as a 422. It never gets that far: the
-API key is checked by a router-level dependency, before the body is validated. `/job-ads/analyse` is
-already in that list for the same reason.
+`/job-ads/resume` went into both lists in Task 4, alongside the route itself.
 
 - [ ] **Step 3: Run them and watch them fail**
 
 Run: `cd backend && uv run pytest tests/test_resume.py tests/test_applications.py -v`
 Expected: the four new tests fail with `404`, the route inventory fails on a set that is missing
-`/applications/{application_id}/resume`, and the two new auth rows fail with `404` instead of `401`.
+`/applications/{application_id}/resume`, and the new auth row fails with `404` instead of `401`.
 
 - [ ] **Step 4: Add the route**
 

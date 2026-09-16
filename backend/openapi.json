@@ -629,6 +629,66 @@
         }
       }
     },
+    "/job-ads/resume": {
+      "post": {
+        "tags": [
+          "job-ads"
+        ],
+        "summary": "Write Draft Resume",
+        "description": "Writes a CV for an advert with no application yet. Stores nothing: the create form carries\nthe draft in a hidden field and it is written with the application, or not at all.",
+        "operationId": "write_draft_resume_job_ads_resume_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobAdText"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/profile": {
       "get": {
         "tags": [
@@ -1474,6 +1534,20 @@
           "content"
         ],
         "title": "ProfileWrite"
+      },
+      "ResumeDraft": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ResumeDraft",
+        "description": "A tailored CV for an advert that has no application yet. Stored nowhere - the create form\ncarries it until the application is written."
       },
       "Status": {
         "type": "string",

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.ai import AnalyserDep
 from app.db import get_session
 from app.models import Application, StatusUpdate
-from app.routers.profile import load_content
+from app.routers.profile import require_profile
 from app.schemas import (
     CLOSED_STATUSES,
     ApplicationCreate,
@@ -116,10 +116,8 @@ def score_match(application_id: uuid.UUID, session: SessionDep, analyser: Analys
         raise HTTPException(
             status.HTTP_409_CONFLICT, "This application has no stored job advert to score"
         )
-    profile = load_content(session)
     # Scoring with no profile returns nulls, and writing those would erase a good score.
-    if not profile.strip():
-        raise HTTPException(status.HTTP_409_CONFLICT, "The candidate profile is empty")
+    profile = require_profile(session)
 
     analysis = analyser(application.job_ad, profile)
     application.match_rating = analysis.match_rating

@@ -75,6 +75,13 @@ class ProfileDraft(BaseModel):
     content: str
 
 
+class ResumeDraft(BaseModel):
+    """A tailored CV for an advert that has no application yet. Stored nowhere - the create form
+    carries it until the application is written."""
+
+    content: str
+
+
 class StatusUpdateCreate(BaseModel):
     date: datetime.date
     status: Status

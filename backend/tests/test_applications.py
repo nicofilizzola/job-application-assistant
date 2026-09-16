@@ -56,6 +56,7 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("/profile", "PUT"),
         ("/profile/enrich", "POST"),
         ("/job-ads/analyse", "POST"),
+        ("/job-ads/resume", "POST"),
     }
 
 
@@ -75,6 +76,7 @@ def test_openapi_exposes_exactly_the_expected_routes():
         ("PUT", "/profile"),
         ("POST", "/profile/enrich"),
         ("POST", "/job-ads/analyse"),
+        ("POST", "/job-ads/resume"),
     ],
 )
 async def test_every_application_route_requires_the_api_key(anonymous_client, method, path):
