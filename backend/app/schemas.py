@@ -124,6 +124,7 @@ class ApplicationCreate(ApplicationFields):
     match_summary: str | None = None
     match_strengths: list[str] | None = None
     match_weaknesses: list[str] | None = None
+    resume: str | None = None
 
 
 class ApplicationPatch(BaseModel):
@@ -174,6 +175,7 @@ class ApplicationDetail(BaseModel):
     match_summary: str | None
     match_strengths: list[str] | None
     match_weaknesses: list[str] | None
+    resume: str | None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     current_status: Status

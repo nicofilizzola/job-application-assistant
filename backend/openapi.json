@@ -938,6 +938,17 @@
               }
             ],
             "title": "Match Weaknesses"
+          },
+          "resume": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume"
           }
         },
         "type": "object",
@@ -1067,6 +1078,17 @@
             ],
             "title": "Match Weaknesses"
           },
+          "resume": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -1108,6 +1130,7 @@
           "match_summary",
           "match_strengths",
           "match_weaknesses",
+          "resume",
           "created_at",
           "updated_at",
           "current_status",
