@@ -93,3 +93,60 @@ test("scoring is refused while the profile is empty", async ({ page }) => {
   // The refusal must not have wiped the score that was already earned.
   await expect(page.getByText("3.5 / 5")).toBeVisible();
 });
+
+test("AI mode writes a tailored CV for the pasted advert", async ({ page }) => {
+  await saveProfile(page, "Nicolas, full stack engineer.");
+  await page.goto("/applications/new");
+
+  await page.getByLabel("AI mode").click();
+  await expect(page.getByRole("region", { name: "Tailored CV" })).toBeHidden();
+  await page.getByLabel("Job advert").fill(ADVERT);
+  await page.getByRole("button", { name: "Write my CV" }).click();
+
+  const preview = page.getByRole("region", { name: "Tailored CV" });
+  await expect(preview.getByText("NICOLAS STUB")).toBeVisible();
+  // Proves the pasted advert reached the backend, not just that some text came back.
+  await expect(preview.getByText(ADVERT.slice(0, 60))).toBeVisible();
+
+  // Filled by hand, because that is the case worth proving: the two buttons are independent and a
+  // CV written without an analysis still reaches the database.
+  await page.getByLabel("Job title").fill("Tailored CV candidate");
+  await page.getByLabel("Company").fill("ACME");
+  await page.getByLabel("Sector").fill("Tech");
+  await page.getByLabel("Location").fill("Paris");
+  await page.getByLabel("Date").fill("2026-09-16");
+  await page.getByRole("button", { name: "Create application" }).click();
+
+  await expect(page.getByRole("heading", { name: "Tailored CV candidate" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Tailored CV" }).getByText("NICOLAS STUB"),
+  ).toBeVisible();
+});
+
+test("a stored advert can be written into a CV from the detail screen", async ({ page }) => {
+  await saveProfile(page, "Nicolas, full stack engineer.");
+  const detail = await createThroughAiMode(page);
+
+  await page.goto(detail);
+  // createThroughAiMode never presses the CV button, so this application starts without one.
+  await expect(page.getByRole("region", { name: "Tailored CV" })).toBeHidden();
+  await page.getByRole("button", { name: "Write my CV" }).click();
+
+  await expect(
+    page.getByRole("region", { name: "Tailored CV" }).getByText("NICOLAS STUB"),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Write it again" })).toBeVisible();
+});
+
+test("writing a CV is refused while the profile is empty", async ({ page }) => {
+  await saveProfile(page, "Nicolas, full stack engineer.");
+  const detail = await createThroughAiMode(page);
+
+  await saveProfile(page, "");
+  await page.goto(detail);
+  await page.getByRole("button", { name: "Write my CV" }).click();
+
+  // Not getByRole("alert"): Next renders its own empty route announcer with that role.
+  await expect(page.getByText("Fill in your profile first")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Tailored CV" })).toBeHidden();
+});
